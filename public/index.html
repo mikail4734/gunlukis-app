@@ -129,6 +129,24 @@
       .animate-pulse-soft {
         animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
       }
+
+      /* Custom scrollbar */
+      .custom-scroll::-webkit-scrollbar { width: 4px; }
+      .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+      .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
+      .custom-scroll::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+      /* Collapsible filter sections */
+      .filter-section .section-body { overflow: hidden; transition: max-height 0.28s ease, opacity 0.22s ease; max-height: 600px; opacity: 1; }
+      .filter-section.collapsed .section-body { max-height: 0 !important; opacity: 0; pointer-events: none; }
+      .filter-section.collapsed .section-chevron { transform: rotate(180deg); }
+      .section-chevron { transition: transform 0.25s ease; }
+
+      /* Filter section divider */
+      .filter-section + .filter-section { border-top: 1px solid #f1f5f9; }
+
+      /* Radio custom style */
+      .filter-radio { width: 17px; height: 17px; accent-color: #2563eb; cursor: pointer; flex-shrink: 0; }
     </style>
 <header class="fixed top-0 left-0 right-0 z-50 glass-nav">
       <div class="max-w-7xl mx-auto px-4 lg:px-8">
@@ -230,141 +248,277 @@
       </div>
 
       <div class="flex flex-col lg:flex-row gap-8">
-        <aside class="w-full lg:w-[300px] shrink-0 hidden md:block">
-          <div
-            class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm lg:sticky lg:top-28"
-          >
-            <div
-              class="flex items-center justify-between mb-6 pb-4 border-b border-slate-100"
-            >
-              <h2 class="text-lg font-extrabold text-slate-900">Filtrele</h2>
-              <button class="text-xs font-bold text-blue-600 hover:underline">
-                Temizle
+        <aside class="w-full lg:w-[310px] shrink-0 hidden md:block">
+          <div class="bg-white rounded-[2rem] border border-slate-100 shadow-sm lg:sticky lg:top-28 flex flex-col overflow-hidden" style="max-height:calc(100vh - 8rem)">
+
+            <!-- Panel header -->
+            <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100 shrink-0">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 bg-blue-50 rounded-xl flex items-center justify-center shrink-0">
+                  <i class="fa-solid fa-sliders text-blue-600 text-sm"></i>
+                </div>
+                <span class="font-extrabold text-slate-900 text-base">Filtrele</span>
+                <span id="filter-count-badge" class="hidden bg-blue-600 text-white text-[10px] font-extrabold min-w-[20px] h-5 px-1.5 rounded-full inline-flex items-center justify-center">0</span>
+              </div>
+              <button onclick="clearAllFilters()" class="text-xs font-bold text-slate-400 hover:text-blue-600 flex items-center gap-1.5 transition-colors">
+                <i class="fa-solid fa-rotate-left text-[10px]"></i> Temizle
               </button>
             </div>
 
-            <form
-              class="space-y-6"
-              onsubmit="
-                event.preventDefault();
-                showToast('Filtreler uygulandı!');
-              "
-            >
-              <div>
-                <label
-                  class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-3"
-                  >Anahtar Kelime</label
-                >
-                <div class="relative">
-                  <i
-                    class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-                  ></i>
-                  <input
-                    type="text"
-                    placeholder="İş başlığı veya firma"
-                    class="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:border-blue-500 focus:bg-white transition-all font-medium outline-none"
-                  />
+            <!-- Scrollable sections -->
+            <form id="filter-form" class="overflow-y-auto flex-1 custom-scroll">
+
+              <!-- 1. Anahtar Kelime -->
+              <div class="filter-section">
+                <button type="button" onclick="toggleFilterSection(this)" class="w-full flex items-center justify-between px-5 py-3.5">
+                  <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    <i class="fa-solid fa-magnifying-glass text-blue-500 w-3.5"></i> Anahtar Kelime
+                  </span>
+                  <i class="fa-solid fa-chevron-up text-slate-300 text-[9px] section-chevron"></i>
+                </button>
+                <div class="section-body px-5 pb-4">
+                  <div class="relative">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300 text-xs"></i>
+                    <input type="text" id="filter-keyword" placeholder="İş başlığı veya firma..."
+                      class="w-full pl-9 pr-8 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:border-blue-400 focus:bg-white transition-all font-medium outline-none placeholder:text-slate-300"
+                      oninput="updateFilterCount()" />
+                    <button type="button" onclick="document.getElementById('filter-keyword').value='';updateFilterCount()"
+                      class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 transition">
+                      <i class="fa-solid fa-xmark text-xs"></i>
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              <div>
-                <label
-                  class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-3"
-                  >Sıralama</label
-                >
-                <div class="space-y-3">
-                  <label class="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="sort"
-                      class="w-5 h-5 accent-blue-600"
-                      checked
-                    />
-                    <span class="text-sm font-semibold text-slate-700"
-                      >Önerilen</span
-                    >
+              <!-- 2. Konum -->
+              <div class="filter-section">
+                <button type="button" onclick="toggleFilterSection(this)" class="w-full flex items-center justify-between px-5 py-3.5">
+                  <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    <i class="fa-solid fa-location-dot text-blue-500 w-3.5"></i> Konum
+                  </span>
+                  <i class="fa-solid fa-chevron-up text-slate-300 text-[9px] section-chevron"></i>
+                </button>
+                <div class="section-body px-5 pb-4 space-y-2.5">
+                  <div class="relative">
+                    <select id="filter-city" onchange="updateDistricts()"
+                      class="w-full pl-4 pr-8 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 focus:border-blue-400 focus:bg-white outline-none appearance-none transition-all cursor-pointer">
+                      <option value="">Tüm İller</option>
+                      <option value="istanbul" selected>İstanbul</option>
+                      <option value="ankara">Ankara</option>
+                      <option value="izmir">İzmir</option>
+                      <option value="bursa">Bursa</option>
+                      <option value="antalya">Antalya</option>
+                      <option value="adana">Adana</option>
+                      <option value="kocaeli">Kocaeli</option>
+                      <option value="mersin">Mersin</option>
+                    </select>
+                    <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-[9px] pointer-events-none"></i>
+                  </div>
+                  <div class="relative">
+                    <select id="filter-district" onchange="updateFilterCount()"
+                      class="w-full pl-4 pr-8 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 focus:border-blue-400 focus:bg-white outline-none appearance-none transition-all cursor-pointer">
+                      <option value="">Tüm İlçeler</option>
+                    </select>
+                    <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-[9px] pointer-events-none"></i>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 3. Meslek Kategorisi -->
+              <div class="filter-section">
+                <button type="button" onclick="toggleFilterSection(this)" class="w-full flex items-center justify-between px-5 py-3.5">
+                  <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    <i class="fa-solid fa-briefcase text-blue-500 w-3.5"></i> Meslek Kategorisi
+                  </span>
+                  <i class="fa-solid fa-chevron-up text-slate-300 text-[9px] section-chevron"></i>
+                </button>
+                <div class="section-body px-5 pb-4">
+                  <div class="relative mb-3">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 text-[10px]"></i>
+                    <input type="text" placeholder="Meslek ara..." oninput="filterMeslekList(this.value)"
+                      class="w-full pl-7 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:border-blue-400 focus:bg-white outline-none transition-all placeholder:text-slate-300" />
+                  </div>
+                  <div id="meslek-list" class="space-y-1.5 max-h-[180px] overflow-y-auto custom-scroll pr-0.5"></div>
+                </div>
+              </div>
+
+              <!-- 4. Çalışma Tipi -->
+              <div class="filter-section">
+                <button type="button" onclick="toggleFilterSection(this)" class="w-full flex items-center justify-between px-5 py-3.5">
+                  <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    <i class="fa-regular fa-clock text-blue-500 w-3.5"></i> Çalışma Tipi
+                  </span>
+                  <i class="fa-solid fa-chevron-up text-slate-300 text-[9px] section-chevron"></i>
+                </button>
+                <div class="section-body px-5 pb-4 space-y-2.5">
+                  <label class="flex items-center gap-3 cursor-pointer group">
+                    <input type="checkbox" class="custom-checkbox shrink-0" name="calisma_tipi" value="tam_zamanli" onchange="updateFilterCount()" />
+                    <span class="text-sm font-semibold text-slate-700 group-hover:text-blue-600 transition">Tam Zamanlı</span>
                   </label>
-                  <label class="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="sort"
-                      class="w-5 h-5 accent-blue-600"
-                    />
-                    <span class="text-sm font-semibold text-slate-700"
-                      >En Yeni</span
-                    >
+                  <label class="flex items-center gap-3 cursor-pointer group">
+                    <input type="checkbox" class="custom-checkbox shrink-0" name="calisma_tipi" value="yari_zamanli" onchange="updateFilterCount()" />
+                    <span class="text-sm font-semibold text-slate-700 group-hover:text-blue-600 transition">Yarı Zamanlı</span>
                   </label>
-                  <label class="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="sort"
-                      class="w-5 h-5 accent-blue-600"
-                    />
-                    <span class="text-sm font-semibold text-slate-700"
-                      >Maaş (Yüksekten Düşüğe)</span
-                    >
+                  <label class="flex items-center gap-3 cursor-pointer group">
+                    <input type="checkbox" class="custom-checkbox shrink-0" name="calisma_tipi" value="gunluk" onchange="updateFilterCount()" />
+                    <span class="text-sm font-semibold text-slate-700 group-hover:text-blue-600 transition">Günlük / Proje Bazlı</span>
                   </label>
                 </div>
               </div>
 
-              <div>
-                <label
-                  class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-3"
-                  >Çalışma Tipi</label
-                >
-                <div class="space-y-3">
-                  <label class="flex items-center gap-3 cursor-pointer">
-                    <input type="checkbox" class="custom-checkbox" checked />
-                    <span class="text-sm font-semibold text-slate-700"
-                      >Tam Zamanlı</span
-                    >
+              <!-- 5. Çalışma Tercihi -->
+              <div class="filter-section">
+                <button type="button" onclick="toggleFilterSection(this)" class="w-full flex items-center justify-between px-5 py-3.5">
+                  <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    <i class="fa-solid fa-building text-blue-500 w-3.5"></i> Çalışma Tercihi
+                  </span>
+                  <i class="fa-solid fa-chevron-up text-slate-300 text-[9px] section-chevron"></i>
+                </button>
+                <div class="section-body px-5 pb-4 space-y-2.5">
+                  <label class="flex items-center gap-3 cursor-pointer group">
+                    <input type="checkbox" class="custom-checkbox shrink-0" name="tercih" value="is_yerinde" onchange="updateFilterCount()" />
+                    <span class="text-sm font-semibold text-slate-700 group-hover:text-blue-600 transition">İş Yerinde</span>
                   </label>
-                  <label class="flex items-center gap-3 cursor-pointer">
-                    <input type="checkbox" class="custom-checkbox" checked />
-                    <span class="text-sm font-semibold text-slate-700"
-                      >Yarı Zamanlı</span
-                    >
+                  <label class="flex items-center gap-3 cursor-pointer group">
+                    <input type="checkbox" class="custom-checkbox shrink-0" name="tercih" value="uzaktan" onchange="updateFilterCount()" />
+                    <span class="text-sm font-semibold text-slate-700 group-hover:text-blue-600 transition">Uzaktan / Remote</span>
                   </label>
-                  <label class="flex items-center gap-3 cursor-pointer">
-                    <input type="checkbox" class="custom-checkbox" />
-                    <span class="text-sm font-semibold text-slate-700"
-                      >Remote (Uzaktan)</span
-                    >
+                  <label class="flex items-center gap-3 cursor-pointer group">
+                    <input type="checkbox" class="custom-checkbox shrink-0" name="tercih" value="hibrit" onchange="updateFilterCount()" />
+                    <span class="text-sm font-semibold text-slate-700 group-hover:text-blue-600 transition">Hibrit</span>
                   </label>
                 </div>
               </div>
 
-              <div>
-                <label
-                  class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-3"
-                  >Maaş Aralığı (Günlük)</label
-                >
-                <input
-                  type="range"
-                  class="w-full accent-blue-600 h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer"
-                  min="500"
-                  max="5000"
-                  step="100"
-                  value="1500"
-                />
-                <div
-                  class="flex justify-between text-xs text-slate-500 mt-2 font-bold"
-                >
-                  <span>500 ₺</span>
-                  <span class="text-blue-600 bg-blue-50 px-2 py-1 rounded"
-                    >1.500 ₺</span
-                  >
-                  <span>5000+ ₺</span>
+              <!-- 6. Deneyim Süresi -->
+              <div class="filter-section">
+                <button type="button" onclick="toggleFilterSection(this)" class="w-full flex items-center justify-between px-5 py-3.5">
+                  <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    <i class="fa-solid fa-chart-line text-blue-500 w-3.5"></i> Deneyim Süresi
+                  </span>
+                  <i class="fa-solid fa-chevron-up text-slate-300 text-[9px] section-chevron"></i>
+                </button>
+                <div class="section-body px-5 pb-4 space-y-2.5">
+                  <label class="flex items-center gap-3 cursor-pointer group">
+                    <input type="radio" name="deneyim" value="" class="filter-radio" checked onchange="updateFilterCount()" />
+                    <span class="text-sm font-semibold text-slate-700 group-hover:text-blue-600 transition">Fark Etmez</span>
+                  </label>
+                  <label class="flex items-center gap-3 cursor-pointer group">
+                    <input type="radio" name="deneyim" value="yeni" class="filter-radio" onchange="updateFilterCount()" />
+                    <span class="text-sm font-semibold text-slate-700 group-hover:text-blue-600 transition">Deneyimsiz (Yeni Başlayan)</span>
+                  </label>
+                  <label class="flex items-center gap-3 cursor-pointer group">
+                    <input type="radio" name="deneyim" value="1-6ay" class="filter-radio" onchange="updateFilterCount()" />
+                    <span class="text-sm font-semibold text-slate-700 group-hover:text-blue-600 transition">1 – 6 Ay</span>
+                  </label>
+                  <label class="flex items-center gap-3 cursor-pointer group">
+                    <input type="radio" name="deneyim" value="6ay-1yil" class="filter-radio" onchange="updateFilterCount()" />
+                    <span class="text-sm font-semibold text-slate-700 group-hover:text-blue-600 transition">6 Ay – 1 Yıl</span>
+                  </label>
+                  <label class="flex items-center gap-3 cursor-pointer group">
+                    <input type="radio" name="deneyim" value="1-3yil" class="filter-radio" onchange="updateFilterCount()" />
+                    <span class="text-sm font-semibold text-slate-700 group-hover:text-blue-600 transition">1 – 3 Yıl</span>
+                  </label>
+                  <label class="flex items-center gap-3 cursor-pointer group">
+                    <input type="radio" name="deneyim" value="3yil+" class="filter-radio" onchange="updateFilterCount()" />
+                    <span class="text-sm font-semibold text-slate-700 group-hover:text-blue-600 transition">3+ Yıl</span>
+                  </label>
                 </div>
               </div>
 
-              <button
-                type="submit"
-                class="w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-500/20 hover:bg-blue-700 hover:-translate-y-0.5 transition-all"
-              >
-                Sonuçları Göster
-              </button>
+              <!-- 7. İlan Tarihi -->
+              <div class="filter-section">
+                <button type="button" onclick="toggleFilterSection(this)" class="w-full flex items-center justify-between px-5 py-3.5">
+                  <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    <i class="fa-regular fa-calendar text-blue-500 w-3.5"></i> İlan Tarihi
+                  </span>
+                  <i class="fa-solid fa-chevron-up text-slate-300 text-[9px] section-chevron"></i>
+                </button>
+                <div class="section-body px-5 pb-4 space-y-2.5">
+                  <label class="flex items-center gap-3 cursor-pointer group">
+                    <input type="radio" name="tarih" value="" class="filter-radio" checked onchange="updateFilterCount()" />
+                    <span class="text-sm font-semibold text-slate-700 group-hover:text-blue-600 transition">Tümü</span>
+                  </label>
+                  <label class="flex items-center gap-3 cursor-pointer group">
+                    <input type="radio" name="tarih" value="bugun" class="filter-radio" onchange="updateFilterCount()" />
+                    <span class="text-sm font-semibold text-slate-700 group-hover:text-blue-600 transition">Bugünün İlanları</span>
+                  </label>
+                  <label class="flex items-center gap-3 cursor-pointer group">
+                    <input type="radio" name="tarih" value="3saat" class="filter-radio" onchange="updateFilterCount()" />
+                    <span class="text-sm font-semibold text-slate-700 group-hover:text-blue-600 transition">Son 3 Saat</span>
+                  </label>
+                  <label class="flex items-center gap-3 cursor-pointer group">
+                    <input type="radio" name="tarih" value="8saat" class="filter-radio" onchange="updateFilterCount()" />
+                    <span class="text-sm font-semibold text-slate-700 group-hover:text-blue-600 transition">Son 8 Saat</span>
+                  </label>
+                  <label class="flex items-center gap-3 cursor-pointer group">
+                    <input type="radio" name="tarih" value="3gun" class="filter-radio" onchange="updateFilterCount()" />
+                    <span class="text-sm font-semibold text-slate-700 group-hover:text-blue-600 transition">Son 3 Gün</span>
+                  </label>
+                  <label class="flex items-center gap-3 cursor-pointer group">
+                    <input type="radio" name="tarih" value="7gun" class="filter-radio" onchange="updateFilterCount()" />
+                    <span class="text-sm font-semibold text-slate-700 group-hover:text-blue-600 transition">Son 7 Gün</span>
+                  </label>
+                  <label class="flex items-center gap-3 cursor-pointer group">
+                    <input type="radio" name="tarih" value="15gun" class="filter-radio" onchange="updateFilterCount()" />
+                    <span class="text-sm font-semibold text-slate-700 group-hover:text-blue-600 transition">Son 15 Gün</span>
+                  </label>
+                  <div class="mt-1 pt-3 border-t border-slate-100">
+                    <label class="flex items-center gap-3 cursor-pointer group">
+                      <input type="checkbox" class="custom-checkbox shrink-0" name="ilk_kez" onchange="updateFilterCount()" />
+                      <span class="text-sm font-semibold text-slate-700 group-hover:text-blue-600 transition">İlk Kez Yayınlananlar</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 8. Eğitim Seviyesi -->
+              <div class="filter-section">
+                <button type="button" onclick="toggleFilterSection(this)" class="w-full flex items-center justify-between px-5 py-3.5">
+                  <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    <i class="fa-solid fa-graduation-cap text-blue-500 w-3.5"></i> Eğitim Seviyesi
+                  </span>
+                  <i class="fa-solid fa-chevron-up text-slate-300 text-[9px] section-chevron"></i>
+                </button>
+                <div class="section-body px-5 pb-4">
+                  <div id="egitim-list" class="space-y-1.5 max-h-[200px] overflow-y-auto custom-scroll pr-0.5"></div>
+                </div>
+              </div>
+
+              <!-- 9. Sıralama -->
+              <div class="filter-section">
+                <button type="button" onclick="toggleFilterSection(this)" class="w-full flex items-center justify-between px-5 py-3.5">
+                  <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    <i class="fa-solid fa-arrow-up-wide-short text-blue-500 w-3.5"></i> Sıralama
+                  </span>
+                  <i class="fa-solid fa-chevron-up text-slate-300 text-[9px] section-chevron"></i>
+                </button>
+                <div class="section-body px-5 pb-5 space-y-2.5">
+                  <label class="flex items-center gap-3 cursor-pointer group">
+                    <input type="radio" name="siralama" value="onerilen" class="filter-radio" checked onchange="updateFilterCount()" />
+                    <span class="text-sm font-semibold text-slate-700 group-hover:text-blue-600 transition">Önerilen</span>
+                  </label>
+                  <label class="flex items-center gap-3 cursor-pointer group">
+                    <input type="radio" name="siralama" value="en_yeni" class="filter-radio" onchange="updateFilterCount()" />
+                    <span class="text-sm font-semibold text-slate-700 group-hover:text-blue-600 transition">En Yeni</span>
+                  </label>
+                  <label class="flex items-center gap-3 cursor-pointer group">
+                    <input type="radio" name="siralama" value="ucret_yuksek" class="filter-radio" onchange="updateFilterCount()" />
+                    <span class="text-sm font-semibold text-slate-700 group-hover:text-blue-600 transition">Ücret (Yüksekten Düşüğe)</span>
+                  </label>
+                </div>
+              </div>
+
             </form>
+
+            <!-- Submit button — fixed at bottom -->
+            <div class="px-5 py-4 border-t border-slate-100 shrink-0 bg-white">
+              <button onclick="applyFilters()" type="button"
+                class="w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-500/20 hover:bg-blue-700 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 text-sm">
+                <i class="fa-solid fa-magnifying-glass"></i> Sonuçları Göster
+              </button>
+            </div>
+
           </div>
         </aside>
 
@@ -930,28 +1084,150 @@
         });
 
         loadNotifBadge();
-
-        // Filtre formu
-        const filterForm = document.querySelector('aside form');
-        if (filterForm) {
-          filterForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const kw = filterForm.querySelector('input[type="text"]');
-            currentFilters.q = kw ? kw.value : '';
-            // Sıralama radyoları
-            const sortRadio = filterForm.querySelector('input[name="sort"]:checked');
-            if (sortRadio) {
-              const idx = [...filterForm.querySelectorAll('input[name="sort"]')].indexOf(sortRadio);
-              currentFilters.sort = ['newest','newest','budget_desc'][idx] || 'newest';
-            }
-            loadJobs();
-            showToast('Filtreler uygulandı!');
-          });
-        }
+        initFilters();
       });
 
       // Sayfa açıldığında işleri çek
       window.addEventListener('DOMContentLoaded', loadJobs);
+
+      // ============== FİLTRE SİSTEMİ ==============
+      const DISTRICTS = {
+        istanbul: ['Adalar','Arnavutköy','Ataşehir','Avcılar','Bağcılar','Bahçelievler','Bakırköy',
+          'Başakşehir','Bayrampaşa','Beşiktaş','Beykoz','Beylikdüzü','Beyoğlu','Büyükçekmece',
+          'Çatalca','Çekmeköy','Esenler','Esenyurt','Eyüpsultan','Fatih','Gaziosmanpaşa',
+          'Güngören','Kadıköy','Kağıthane','Kartal','Küçükçekmece','Maltepe','Pendik',
+          'Sancaktepe','Sarıyer','Şile','Şişli','Silivri','Sultanbeyli','Sultangazi',
+          'Tuzla','Ümraniye','Üsküdar','Zeytinburnu'],
+        ankara: ['Altındağ','Çankaya','Etimesgut','Gölbaşı','Keçiören','Mamak','Pursaklar','Sincan','Yenimahalle'],
+        izmir: ['Balçova','Bayraklı','Bornova','Buca','Çiğli','Gaziemir','Karabağlar','Karşıyaka','Konak','Narlıdere','Torbalı'],
+        bursa: ['Gemlik','İnegöl','Mudanya','Nilüfer','Osmangazi','Yıldırım'],
+        antalya: ['Alanya','Döşemealtı','Kepez','Konyaaltı','Korkuteli','Manavgat','Muratpaşa','Serik'],
+        kocaeli: ['Gebze','İzmit','Darıca','Körfez','Başiskele','Çayırova','Dilovası'],
+        mersin: ['Akdeniz','Mezitli','Toroslar','Yenişehir','Tarsus','Erdemli'],
+        adana: ['Çukurova','Seyhan','Yüreğir','Sarıçam','Ceyhan','Kozan'],
+      };
+
+      const MESLEKLER = [
+        {emoji:'🧹', label:'Temizlik & Ev Hizmetleri'},
+        {emoji:'🍽️', label:'Yemek & Mutfak'},
+        {emoji:'🔒', label:'Güvenlik & Gözetleme'},
+        {emoji:'🚚', label:'Taşımacılık & Kurye'},
+        {emoji:'🎉', label:'Etkinlik & Organizasyon'},
+        {emoji:'🌿', label:'Bahçe & Dış Mekan'},
+        {emoji:'❤️', label:'Bakım & Sağlık Hizmetleri'},
+        {emoji:'📚', label:'Eğitim & Özel Ders'},
+        {emoji:'🛒', label:'Market & Perakende'},
+        {emoji:'🏗️', label:'İnşaat & Tadilat'},
+        {emoji:'💻', label:'Bilişim & Teknoloji'},
+        {emoji:'🎨', label:'Sanat & Tasarım'},
+        {emoji:'📦', label:'Depo & Lojistik'},
+        {emoji:'🏨', label:'Otel & Turizm'},
+        {emoji:'🚗', label:'Sürücü & Ulaşım'},
+      ];
+
+      const EGITIM = [
+        'Doktora - Mezun','Doktora - Öğrenci',
+        'Yüksek Lisans - Mezun','Yüksek Lisans - Öğrenci',
+        'Üniversite - Mezun','Üniversite - Öğrenci',
+        'Meslek Yüksekokulu - Mezun','Meslek Yüksekokulu - Öğrenci',
+        'Lise - Mezun','Lise - Öğrenci','Ortaokul veya Altı',
+      ];
+
+      function toggleFilterSection(btn) {
+        btn.closest('.filter-section').classList.toggle('collapsed');
+      }
+
+      function updateDistricts() {
+        const city = document.getElementById('filter-city')?.value;
+        const sel = document.getElementById('filter-district');
+        if (!sel) return;
+        sel.innerHTML = '<option value="">Tüm İlçeler</option>';
+        (DISTRICTS[city] || []).forEach(d => {
+          const o = document.createElement('option');
+          o.value = d.toLowerCase().replace(/\s+/g,'-').replace(/[ğ]/g,'g').replace(/[ü]/g,'u').replace(/[ş]/g,'s').replace(/[ı]/g,'i').replace(/[ö]/g,'o').replace(/[ç]/g,'c');
+          o.textContent = d;
+          sel.appendChild(o);
+        });
+        updateFilterCount();
+      }
+
+      function buildMeslekList(items) {
+        const el = document.getElementById('meslek-list');
+        if (!el) return;
+        el.innerHTML = items.map(m => `
+          <label class="flex items-center gap-2.5 cursor-pointer group py-0.5">
+            <input type="checkbox" class="custom-checkbox shrink-0" name="meslek" value="${escapeHtml(m.label)}" onchange="updateFilterCount()" />
+            <span class="text-sm font-semibold text-slate-700 group-hover:text-blue-600 transition leading-snug">${m.emoji} ${m.label}</span>
+          </label>`).join('');
+      }
+
+      function filterMeslekList(q) {
+        buildMeslekList(MESLEKLER.filter(m => m.label.toLowerCase().includes(q.toLowerCase())));
+      }
+
+      function buildEgitimList() {
+        const el = document.getElementById('egitim-list');
+        if (!el) return;
+        el.innerHTML = EGITIM.map(e => `
+          <label class="flex items-center gap-2.5 cursor-pointer group py-0.5">
+            <input type="checkbox" class="custom-checkbox shrink-0" name="egitim" value="${escapeHtml(e)}" onchange="updateFilterCount()" />
+            <span class="text-sm font-semibold text-slate-700 group-hover:text-blue-600 transition leading-snug">${e}</span>
+          </label>`).join('');
+      }
+
+      function updateFilterCount() {
+        let n = 0;
+        const kw = document.getElementById('filter-keyword')?.value?.trim();
+        if (kw) n++;
+        if (document.getElementById('filter-city')?.value) n++;
+        if (document.getElementById('filter-district')?.value) n++;
+        document.querySelectorAll('#filter-form input[type="checkbox"]:checked').forEach(() => n++);
+        const den = document.querySelector('#filter-form input[name="deneyim"]:checked')?.value;
+        if (den) n++;
+        const tar = document.querySelector('#filter-form input[name="tarih"]:checked')?.value;
+        if (tar) n++;
+        const sira = document.querySelector('#filter-form input[name="siralama"]:checked')?.value;
+        if (sira && sira !== 'onerilen') n++;
+        const badge = document.getElementById('filter-count-badge');
+        if (badge) { badge.textContent = n; n > 0 ? badge.classList.remove('hidden') : badge.classList.add('hidden'); }
+      }
+
+      function clearAllFilters() {
+        const kw = document.getElementById('filter-keyword');
+        if (kw) kw.value = '';
+        const city = document.getElementById('filter-city');
+        if (city) { city.value = ''; updateDistricts(); }
+        document.querySelectorAll('#filter-form input[type="checkbox"]').forEach(c => c.checked = false);
+        const den0 = document.querySelector('#filter-form input[name="deneyim"]');
+        if (den0) den0.checked = true;
+        const tar0 = document.querySelector('#filter-form input[name="tarih"]');
+        if (tar0) tar0.checked = true;
+        const sira0 = document.querySelector('#filter-form input[name="siralama"]');
+        if (sira0) sira0.checked = true;
+        updateFilterCount();
+        showToast('Filtreler temizlendi');
+      }
+
+      function applyFilters() {
+        const kw = document.getElementById('filter-keyword')?.value?.trim() || '';
+        const city = document.getElementById('filter-city')?.value || '';
+        const district = document.getElementById('filter-district')?.value || '';
+        const sira = document.querySelector('#filter-form input[name="siralama"]:checked')?.value || 'onerilen';
+        const sortMap = { onerilen: 'newest', en_yeni: 'newest', ucret_yuksek: 'budget_desc' };
+        currentFilters.q = kw;
+        currentFilters.city = city;
+        currentFilters.district = district;
+        currentFilters.sort = sortMap[sira] || 'newest';
+        loadJobs();
+        showToast('Filtreler uygulandı!');
+      }
+
+      function initFilters() {
+        buildMeslekList(MESLEKLER);
+        buildEgitimList();
+        updateDistricts();
+        updateFilterCount();
+      }
     </script>
   </body>
 </html>
