@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Günlükİş | Gizlilik Politikası</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = { theme: { extend: { fontFamily: { sans: ["Plus Jakarta Sans", "sans-serif"] } } } };
+    </script>
+    <style>
+      body { background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
+      .glass-nav { background: rgba(255,255,255,0.9); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(226,232,240,0.8); }
+      .notif-dropdown { position:absolute; top:55px; right:0; width:380px; max-width:90vw; max-height:70vh; background:white; border-radius:1.25rem; box-shadow:0 20px 50px rgba(0,0,0,0.15); border:1px solid #e2e8f0; z-index:60; display:none; flex-direction:column; overflow:hidden; }
+      .notif-dropdown.open { display:flex; }
+      .prose h2 { font-size: 1.2rem; font-weight: 800; color: #0f172a; margin-top: 2rem; margin-bottom: 0.75rem; }
+      .prose p { color: #475569; font-size: 0.9rem; line-height: 1.8; margin-bottom: 0.75rem; font-weight: 500; }
+      .prose ul { list-style: disc; padding-left: 1.5rem; color: #475569; font-size: 0.9rem; line-height: 1.8; font-weight: 500; margin-bottom: 0.75rem; }
+      .prose ul li { margin-bottom: 0.25rem; }
+    </style>
+  </head>
+  <body class="text-slate-800 antialiased pb-20 md:pb-0">
+
+    <header class="fixed top-0 left-0 right-0 z-50 glass-nav">
+      <div class="max-w-7xl mx-auto px-4 lg:px-8">
+        <div class="flex items-center justify-between h-16 md:h-20">
+          <a href="index.html" class="flex items-center gap-3">
+            <div class="bg-blue-600 p-2.5 rounded-xl shadow-lg shadow-blue-500/30"><i class="fa-solid fa-briefcase text-white text-sm"></i></div>
+            <span class="text-xl font-extrabold tracking-tight text-slate-900">Günlükİş</span>
+          </a>
+          <div class="hidden md:flex items-center gap-4">
+            <button class="text-sm font-bold bg-slate-900 text-white px-6 py-2.5 rounded-full hover:bg-slate-800 transition shadow-md">İş Ver</button>
+            <div class="w-px h-6 bg-slate-200 mx-2"></div>
+            <div class="relative">
+              <button onclick="toggleNotifications(event)" id="notif-bell-btn" class="relative p-2 text-slate-500 hover:text-slate-900 transition">
+                <i class="fa-regular fa-bell text-xl"></i>
+                <span id="notif-badge" class="hidden absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 border-2 border-white rounded-full"></span>
+              </button>
+              <div id="notif-dropdown" class="notif-dropdown"></div>
+            </div>
+            <div class="relative group cursor-pointer ml-2 py-4">
+              <div class="flex items-center gap-2">
+                <img src="https://i.pravatar.cc/150?img=32" alt="Profil" class="w-10 h-10 rounded-full object-cover border-2 border-slate-100 hover:border-blue-200 transition-colors" />
+                <i class="fa-solid fa-chevron-down text-slate-400 text-[10px] transition-transform duration-300 group-hover:rotate-180"></i>
+              </div>
+              <div class="absolute right-0 top-full mt-[-5px] w-60 bg-white border border-slate-100 rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 py-2 z-50">
+                <a href="profil.html" class="block px-5 py-3 text-[15px] font-bold text-slate-800 hover:bg-slate-50 hover:text-blue-600 transition">Üye profiline git</a>
+                <div class="h-px bg-slate-100 my-1"></div>
+                <a href="#" class="block px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition">Başvurularım</a>
+                <a href="#" class="block px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition">Favori İlanlarım</a>
+                <a href="#" class="block px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition">Özgeçmişler</a>
+                <a href="#" class="block px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition">İş Tercihleri</a>
+                <div class="h-px bg-slate-100 my-1"></div>
+                <a href="#" class="block px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition">Ayarlar</a>
+                <a href="#" class="block px-5 py-2.5 text-sm font-bold text-red-500 hover:bg-red-50 transition">Çıkış</a>
+              </div>
+            </div>
+          </div>
+          <div class="md:hidden flex items-center gap-4">
+            <button onclick="toggleNotifications(event)" class="relative text-slate-500">
+              <i class="fa-regular fa-bell text-xl"></i>
+              <span id="notif-badge-mobile" class="hidden absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 border-2 border-white rounded-full"></span>
+            </button>
+            <a href="profil.html"><img src="https://i.pravatar.cc/150?img=32" alt="Profil" class="w-9 h-9 rounded-full object-cover border border-slate-200" /></a>
+          </div>
+        </div>
+        <nav class="hidden md:flex items-center justify-center gap-10 h-14 text-sm font-bold text-slate-500 border-t border-slate-200/60">
+          <a href="index.html" class="flex items-center gap-2 hover:text-slate-800 transition h-full"><i class="fa-solid fa-layer-group"></i> İşler</a>
+          <a href="takvim.html" class="flex items-center gap-2 hover:text-slate-800 transition h-full"><i class="fa-regular fa-calendar"></i> Takvim</a>
+          <a href="mesaj.html" class="flex items-center gap-2 hover:text-slate-800 transition h-full"><i class="fa-regular fa-message"></i> Mesajlar</a>
+          <a href="anket.html" class="flex items-center gap-2 hover:text-slate-800 transition h-full"><i class="fa-solid fa-chart-simple"></i> Anket</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="pt-36 md:pt-44 pb-20 px-4">
+      <div class="max-w-3xl mx-auto">
+
+        <div class="mb-8">
+          <div class="inline-flex items-center gap-2 bg-slate-100 text-slate-600 px-4 py-1.5 rounded-full text-sm font-bold mb-4">
+            <i class="fa-solid fa-shield-halved"></i> Yasal
+          </div>
+          <h1 class="text-4xl font-extrabold text-slate-900 mb-2">Gizlilik Politikası</h1>
+          <p class="text-slate-400 text-sm font-medium">Son güncelleme: 1 Ocak 2026</p>
+        </div>
+
+        <div class="bg-blue-50 border border-blue-100 rounded-2xl p-5 mb-8 flex gap-4">
+          <i class="fa-solid fa-circle-info text-blue-500 mt-0.5 shrink-0"></i>
+          <p class="text-sm text-blue-700 font-medium leading-relaxed">Bu politika, Günlükİş platformunu kullanırken kişisel verilerinizin nasıl toplandığını, kullanıldığını ve korunduğunu açıklamaktadır.</p>
+        </div>
+
+        <div class="bg-white rounded-3xl border border-slate-100 shadow-sm p-8 prose">
+
+          <h2>1. Toplanan Veriler</h2>
+          <p>Günlükİş olarak aşağıdaki kişisel verileri toplayabiliriz:</p>
+          <ul>
+            <li>Ad, soyad, e-posta adresi ve telefon numarası</li>
+            <li>Özgeçmiş, eğitim ve iş deneyimi bilgileri</li>
+            <li>Konum bilgisi (şehir/ilçe düzeyinde)</li>
+            <li>Platform kullanım verileri ve çerezler</li>
+            <li>Ödeme bilgileri (şifreli olarak işlenir, saklanmaz)</li>
+          </ul>
+
+          <h2>2. Verilerin Kullanım Amacı</h2>
+          <p>Toplanan veriler yalnızca aşağıdaki amaçlarla kullanılmaktadır:</p>
+          <ul>
+            <li>Hesap oluşturma ve kimlik doğrulama</li>
+            <li>İş başvurularının işveren ile eşleştirilmesi</li>
+            <li>Platform güvenliğinin sağlanması</li>
+            <li>Hizmet kalitesinin iyileştirilmesi</li>
+            <li>Yasal yükümlülüklerin yerine getirilmesi</li>
+          </ul>
+
+          <h2>3. Veri Paylaşımı</h2>
+          <p>Kişisel verileriniz üçüncü taraflarla yalnızca şu durumlarda paylaşılır: iş başvurusunda bulunduğunuzda profiliniz ilgili işverenle paylaşılır. Yasal zorunluluk durumunda yetkili makamlarla paylaşılabilir. Veriler hiçbir şekilde ticari amaçla üçüncü taraflara satılmaz.</p>
+
+          <h2>4. Veri Güvenliği</h2>
+          <p>Verileriniz 256-bit SSL şifrelemesi ile aktarılmakta ve güvenli sunucularda saklanmaktadır. Yetkisiz erişime karşı teknik ve idari tedbirler alınmaktadır. Güvenlik ihlali durumunda yasal süre içinde bilgilendirme yapılır.</p>
+
+          <h2>5. Çerezler (Cookies)</h2>
+          <p>Oturum sürdürme, tercih kaydetme ve analitik amaçlarla çerezler kullanılmaktadır. Tarayıcı ayarlarından çerezleri devre dışı bırakabilirsiniz; ancak bu bazı özelliklerin çalışmamasına neden olabilir.</p>
+
+          <h2>6. Haklarınız</h2>
+          <p>KVKK kapsamında aşağıdaki haklara sahipsiniz:</p>
+          <ul>
+            <li>Verilerinize erişim ve kopyalarını talep etme</li>
+            <li>Hatalı verilerin düzeltilmesini isteme</li>
+            <li>Verilerinizin silinmesini talep etme (hesap silme)</li>
+            <li>Veri işlemeye itiraz etme</li>
+          </ul>
+          <p>Bu haklarınızı kullanmak için <a href="iletisim.html" class="text-blue-600 font-bold hover:underline">iletişim sayfamızdan</a> bize ulaşabilirsiniz.</p>
+
+          <h2>7. İletişim</h2>
+          <p>Gizlilik politikamız hakkında sorularınız için: <a href="mailto:gizlilik@gunlukis.com" class="text-blue-600 font-bold hover:underline">gizlilik@gunlukis.com</a></p>
+
+        </div>
+
+        <div class="mt-6 flex gap-4">
+          <a href="kullanici-sozlesmesi.html" class="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-blue-600 transition">
+            <i class="fa-solid fa-file-contract"></i> Kullanıcı Sözleşmesi
+          </a>
+          <a href="sss.html" class="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-blue-600 transition">
+            <i class="fa-regular fa-circle-question"></i> Sıkça Sorulanlar
+          </a>
+        </div>
+
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 pt-16 pb-8">
+      <div class="max-w-7xl mx-auto px-4 md:px-8">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-10">
+          <div class="md:col-span-1"><div class="flex items-center gap-2 mb-4"><div class="bg-blue-600 p-1.5 rounded-lg"><i class="fa-solid fa-briefcase text-white text-sm"></i></div><span class="text-lg font-extrabold text-slate-900">Günlükİş</span></div><p class="text-slate-500 text-sm mb-6 font-medium">Modern neslin yeni iş bulma platformu.</p><div class="flex gap-4"><a href="#" class="text-slate-400 hover:text-blue-500 text-xl transition"><i class="fa-brands fa-twitter"></i></a><a href="#" class="text-slate-400 hover:text-pink-600 text-xl transition"><i class="fa-brands fa-instagram"></i></a><a href="#" class="text-slate-400 hover:text-blue-700 text-xl transition"><i class="fa-brands fa-linkedin"></i></a></div></div>
+          <div><h4 class="font-bold text-slate-800 mb-4">Hızlı Bağlantılar</h4><ul class="space-y-3 text-sm font-medium text-slate-500"><li><a href="hakkimizda.html" class="hover:text-blue-600 transition">Hakkımızda</a></li><li><a href="iletisim.html" class="hover:text-blue-600 transition">İletişim</a></li><li><a href="sss.html" class="hover:text-blue-600 transition">Sıkça Sorulanlar</a></li></ul></div>
+          <div><h4 class="font-bold text-slate-800 mb-4">İşveren</h4><ul class="space-y-3 text-sm font-medium text-slate-500"><li><a href="is-ver.html" class="hover:text-blue-600 transition">İlan Ver</a></li><li><a href="fiyatlandirma.html" class="hover:text-blue-600 transition">Fiyatlandırma</a></li></ul></div>
+          <div><h4 class="font-bold text-slate-800 mb-4">Yasal</h4><ul class="space-y-3 text-sm font-medium text-slate-500"><li><a href="gizlilik.html" class="hover:text-blue-600 transition font-semibold text-blue-600">Gizlilik Politikası</a></li><li><a href="kullanici-sozlesmesi.html" class="hover:text-blue-600 transition">Kullanıcı Sözleşmesi</a></li></ul></div>
+        </div>
+        <div class="pt-8 border-t border-slate-100 text-center"><p class="text-slate-400 text-sm font-medium">© 2026 Günlükİş Platformu. Tüm hakları saklıdır.</p></div>
+      </div>
+    </footer>
+
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around items-center h-16 pb-safe z-50">
+      <a href="index.html" class="flex flex-col items-center gap-1 text-slate-400 w-1/4"><i class="fa-solid fa-house text-lg"></i><span class="text-[10px] font-bold">Ana Sayfa</span></a>
+      <a href="#" class="flex flex-col items-center gap-1 text-slate-400 w-1/4"><i class="fa-solid fa-magnifying-glass text-lg"></i><span class="text-[10px] font-bold">Keşfet</span></a>
+      <a href="mesaj.html" class="flex flex-col items-center gap-1 text-slate-400 w-1/4"><i class="fa-regular fa-bookmark text-lg"></i><span class="text-[10px] font-bold">Mesajlar</span></a>
+      <a href="profil.html" class="flex flex-col items-center gap-1 text-slate-400 w-1/4"><i class="fa-regular fa-user text-lg"></i><span class="text-[10px] font-bold">Profil</span></a>
+    </nav>
+
+    <script src="/js/api.js"></script>
+    <script>
+      async function toggleNotifications(e) {
+        e?.stopPropagation(); const dd=document.getElementById("notif-dropdown"); if(!dd) return;
+        if(dd.classList.contains("open")){dd.classList.remove("open");return;}
+        dd.innerHTML=`<div class="p-4 text-center text-sm text-slate-400">Yükleniyor...</div>`;dd.classList.add("open");
+        try{ const data=await apiGet("/api/notifications");const items=data.items||[];
+          dd.innerHTML=`<div class="flex items-center justify-between p-4 border-b border-slate-100"><h3 class="font-extrabold text-slate-900 text-sm"><i class="fa-regular fa-bell text-blue-600 mr-2"></i>Bildirimler</h3></div>`+(items.length===0?`<div class="p-8 text-center text-sm text-slate-400">Henüz bildirim yok.</div>`:`<div class="overflow-y-auto" style="max-height:55vh">${items.map(n=>`<div class="p-4 border-b border-slate-50 hover:bg-slate-50 ${n.is_read?"":"bg-blue-50/40"}"><p class="text-sm font-bold text-slate-900">${n.title}</p></div>`).join("")}</div>`);
+          const b=document.getElementById("notif-badge"),bm=document.getElementById("notif-badge-mobile");data.unread>0?(b?.classList.remove("hidden"),bm?.classList.remove("hidden")):(b?.classList.add("hidden"),bm?.classList.add("hidden"));
+        }catch(e){dd.innerHTML=`<div class="p-4 text-xs text-rose-500 text-center">Yüklenemedi</div>`;}
+      }
+      document.addEventListener("click",e=>{const dd=document.getElementById("notif-dropdown");if(!dd?.classList.contains("open"))return;if(!dd.contains(e.target)&&!document.getElementById("notif-bell-btn")?.contains(e.target))dd.classList.remove("open");});
+      async function loadNotifBadge(){try{const d=await apiGet("/api/notifications");if(d.unread>0){document.getElementById("notif-badge")?.classList.remove("hidden");document.getElementById("notif-badge-mobile")?.classList.remove("hidden");}}catch(e){}}
+      window.addEventListener("DOMContentLoaded",loadNotifBadge);
+    </script>
+  </body>
+</html>

@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Günlükİş | Kullanıcı Sözleşmesi</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = { theme: { extend: { fontFamily: { sans: ["Plus Jakarta Sans", "sans-serif"] } } } };
+    </script>
+    <style>
+      body { background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
+      .glass-nav { background: rgba(255,255,255,0.9); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(226,232,240,0.8); }
+      .notif-dropdown { position:absolute; top:55px; right:0; width:380px; max-width:90vw; max-height:70vh; background:white; border-radius:1.25rem; box-shadow:0 20px 50px rgba(0,0,0,0.15); border:1px solid #e2e8f0; z-index:60; display:none; flex-direction:column; overflow:hidden; }
+      .notif-dropdown.open { display:flex; }
+      .prose h2 { font-size: 1.2rem; font-weight: 800; color: #0f172a; margin-top: 2rem; margin-bottom: 0.75rem; }
+      .prose p { color: #475569; font-size: 0.9rem; line-height: 1.8; margin-bottom: 0.75rem; font-weight: 500; }
+      .prose ul { list-style: disc; padding-left: 1.5rem; color: #475569; font-size: 0.9rem; line-height: 1.8; font-weight: 500; margin-bottom: 0.75rem; }
+      .prose ul li { margin-bottom: 0.25rem; }
+      .prose ol { list-style: decimal; padding-left: 1.5rem; color: #475569; font-size: 0.9rem; line-height: 1.8; font-weight: 500; margin-bottom: 0.75rem; }
+      .prose ol li { margin-bottom: 0.25rem; }
+    </style>
+  </head>
+  <body class="text-slate-800 antialiased pb-20 md:pb-0">
+
+    <header class="fixed top-0 left-0 right-0 z-50 glass-nav">
+      <div class="max-w-7xl mx-auto px-4 lg:px-8">
+        <div class="flex items-center justify-between h-16 md:h-20">
+          <a href="index.html" class="flex items-center gap-3">
+            <div class="bg-blue-600 p-2.5 rounded-xl shadow-lg shadow-blue-500/30"><i class="fa-solid fa-briefcase text-white text-sm"></i></div>
+            <span class="text-xl font-extrabold tracking-tight text-slate-900">Günlükİş</span>
+          </a>
+          <div class="hidden md:flex items-center gap-4">
+            <button class="text-sm font-bold bg-slate-900 text-white px-6 py-2.5 rounded-full hover:bg-slate-800 transition shadow-md">İş Ver</button>
+            <div class="w-px h-6 bg-slate-200 mx-2"></div>
+            <div class="relative">
+              <button onclick="toggleNotifications(event)" id="notif-bell-btn" class="relative p-2 text-slate-500 hover:text-slate-900 transition">
+                <i class="fa-regular fa-bell text-xl"></i>
+                <span id="notif-badge" class="hidden absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 border-2 border-white rounded-full"></span>
+              </button>
+              <div id="notif-dropdown" class="notif-dropdown"></div>
+            </div>
+            <div class="relative group cursor-pointer ml-2 py-4">
+              <div class="flex items-center gap-2">
+                <img src="https://i.pravatar.cc/150?img=32" alt="Profil" class="w-10 h-10 rounded-full object-cover border-2 border-slate-100 hover:border-blue-200 transition-colors" />
+                <i class="fa-solid fa-chevron-down text-slate-400 text-[10px] transition-transform duration-300 group-hover:rotate-180"></i>
+              </div>
+              <div class="absolute right-0 top-full mt-[-5px] w-60 bg-white border border-slate-100 rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 py-2 z-50">
+                <a href="profil.html" class="block px-5 py-3 text-[15px] font-bold text-slate-800 hover:bg-slate-50 hover:text-blue-600 transition">Üye profiline git</a>
+                <div class="h-px bg-slate-100 my-1"></div>
+                <a href="#" class="block px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition">Başvurularım</a>
+                <a href="#" class="block px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition">Favori İlanlarım</a>
+                <a href="#" class="block px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition">Özgeçmişler</a>
+                <a href="#" class="block px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition">İş Tercihleri</a>
+                <div class="h-px bg-slate-100 my-1"></div>
+                <a href="#" class="block px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition">Ayarlar</a>
+                <a href="#" class="block px-5 py-2.5 text-sm font-bold text-red-500 hover:bg-red-50 transition">Çıkış</a>
+              </div>
+            </div>
+          </div>
+          <div class="md:hidden flex items-center gap-4">
+            <button onclick="toggleNotifications(event)" class="relative text-slate-500">
+              <i class="fa-regular fa-bell text-xl"></i>
+              <span id="notif-badge-mobile" class="hidden absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 border-2 border-white rounded-full"></span>
+            </button>
+            <a href="profil.html"><img src="https://i.pravatar.cc/150?img=32" alt="Profil" class="w-9 h-9 rounded-full object-cover border border-slate-200" /></a>
+          </div>
+        </div>
+        <nav class="hidden md:flex items-center justify-center gap-10 h-14 text-sm font-bold text-slate-500 border-t border-slate-200/60">
+          <a href="index.html" class="flex items-center gap-2 hover:text-slate-800 transition h-full"><i class="fa-solid fa-layer-group"></i> İşler</a>
+          <a href="takvim.html" class="flex items-center gap-2 hover:text-slate-800 transition h-full"><i class="fa-regular fa-calendar"></i> Takvim</a>
+          <a href="mesaj.html" class="flex items-center gap-2 hover:text-slate-800 transition h-full"><i class="fa-regular fa-message"></i> Mesajlar</a>
+          <a href="anket.html" class="flex items-center gap-2 hover:text-slate-800 transition h-full"><i class="fa-solid fa-chart-simple"></i> Anket</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="pt-36 md:pt-44 pb-20 px-4">
+      <div class="max-w-3xl mx-auto">
+
+        <div class="mb-8">
+          <div class="inline-flex items-center gap-2 bg-slate-100 text-slate-600 px-4 py-1.5 rounded-full text-sm font-bold mb-4">
+            <i class="fa-solid fa-file-contract"></i> Yasal
+          </div>
+          <h1 class="text-4xl font-extrabold text-slate-900 mb-2">Kullanıcı Sözleşmesi</h1>
+          <p class="text-slate-400 text-sm font-medium">Son güncelleme: 1 Ocak 2026</p>
+        </div>
+
+        <div class="bg-amber-50 border border-amber-100 rounded-2xl p-5 mb-8 flex gap-4">
+          <i class="fa-solid fa-triangle-exclamation text-amber-500 mt-0.5 shrink-0"></i>
+          <p class="text-sm text-amber-700 font-medium leading-relaxed">Günlükİş platformuna kayıt olarak veya platformu kullanarak aşağıdaki kullanım koşullarını okuduğunuzu ve kabul ettiğinizi beyan etmiş olursunuz.</p>
+        </div>
+
+        <div class="bg-white rounded-3xl border border-slate-100 shadow-sm p-8 prose">
+
+          <h2>1. Taraflar</h2>
+          <p>Bu sözleşme, Günlükİş Teknoloji A.Ş. ("Şirket") ile Günlükİş platformunu ("Platform") kullanan gerçek veya tüzel kişi ("Kullanıcı") arasında akdedilmektedir. Platform'a erişim sağlayan her kullanıcı bu sözleşmenin tüm hükümlerini peşinen kabul etmiş sayılır.</p>
+
+          <h2>2. Hizmetin Tanımı</h2>
+          <p>Günlükİş, iş arayanlar ile işverenler arasında günlük, part-time ve proje bazlı iş fırsatlarını buluşturan dijital bir platformdur. Platform aracılığıyla sunulan başlıca hizmetler:</p>
+          <ul>
+            <li>İş ilanı oluşturma ve yönetme</li>
+            <li>İş başvurusu yapma ve takip etme</li>
+            <li>İşveren-iş arayan mesajlaşması</li>
+            <li>Özgeçmiş oluşturma ve paylaşma</li>
+            <li>Takvim ve görev takip araçları</li>
+          </ul>
+
+          <h2>3. Üyelik ve Hesap</h2>
+          <p>Platforma üye olmak için 18 yaşını doldurmuş olmak gerekmektedir. Kayıt sırasında verilen bilgilerin doğru, güncel ve eksiksiz olması zorunludur. Hesabınızın güvenliğinden ve hesabınız üzerinden gerçekleştirilen tüm işlemlerden siz sorumlusunuz. Şifrenizi kimseyle paylaşmamalısınız.</p>
+          <p>Şirket, aşağıdaki durumlarda hesabı askıya alma veya kalıcı olarak kapatma hakkını saklı tutar:</p>
+          <ul>
+            <li>Gerçeğe aykırı bilgi verilmesi</li>
+            <li>Platformun kötüye kullanılması</li>
+            <li>Bu sözleşme hükümlerinin ihlal edilmesi</li>
+            <li>Diğer kullanıcılara zarar verilmesi</li>
+          </ul>
+
+          <h2>4. Kullanıcı Yükümlülükleri</h2>
+          <p>Kullanıcılar platform üzerinde aşağıdaki eylemlerden kaçınmakla yükümlüdür:</p>
+          <ul>
+            <li>Yanıltıcı, yanlış veya aldatıcı içerik yayınlamak</li>
+            <li>Spam, reklam veya izinsiz ticari mesaj göndermek</li>
+            <li>Diğer kullanıcıların kişisel verilerini izinsiz toplamak</li>
+            <li>Platform altyapısına zarar verecek yazılım veya kod çalıştırmak</li>
+            <li>Fikri mülkiyet haklarını ihlal eden içerik paylaşmak</li>
+            <li>Nefret söylemi, taciz veya ayrımcılık içeren paylaşımlar yapmak</li>
+          </ul>
+
+          <h2>5. İşveren Sorumlulukları</h2>
+          <p>İşveren sıfatıyla platform kullanan kullanıcılar ek olarak şu yükümlülüklere tabidir:</p>
+          <ul>
+            <li>Yayımlanan iş ilanlarının gerçek ve geçerli iş teklifleri olması</li>
+            <li>Asgari ücret ve çalışma mevzuatına uyulması</li>
+            <li>Başvuru sahiplerine zamanında ve dürüst geri bildirim verilmesi</li>
+            <li>Ödeme taahhütlerinin eksiksiz yerine getirilmesi</li>
+          </ul>
+
+          <h2>6. Ücretlendirme ve Ödemeler</h2>
+          <p>Temel üyelik ücretsizdir. İşveren kurumsal paketleri ve gelişmiş özellikler ücrete tabidir. Güncel fiyatlar <a href="fiyatlandirma.html" class="text-blue-600 font-bold hover:underline">fiyatlandırma sayfamızda</a> yayımlanmaktadır. Ödemeler güvenli ödeme altyapısı üzerinden işlenir; Şirket kart bilgilerini saklamaz.</p>
+          <p>Abonelik iptalleri bir sonraki fatura dönemine kadar geçerlilik gösterir. Kullanılmayan süre için iade yapılmaz, ancak iptal anından itibaren yeni ücret tahsil edilmez.</p>
+
+          <h2>7. Fikri Mülkiyet</h2>
+          <p>Platform üzerindeki tüm içerik, tasarım, logo, yazılım ve diğer materyaller Günlükİş Teknoloji A.Ş.'ye aittir ve telif hukuku kapsamında korunmaktadır. Kullanıcılar, platform içeriğini Şirket'in yazılı izni olmaksızın kopyalayamaz, dağıtamaz veya ticari amaçla kullanamazlar.</p>
+          <p>Kullanıcıların platforma yüklediği özgeçmiş, fotoğraf ve diğer içerikler için kullanıcıya ait telif hakları saklıdır; ancak kullanıcı bu içeriklerin platform aracılığıyla işverenlerle paylaşılmasına izin vermiş sayılır.</p>
+
+          <h2>8. Sorumluluk Sınırlaması</h2>
+          <p>Günlükİş, iş arayan ile işveren arasında aracılık hizmeti sunan bir platform olup taraflar arasındaki iş ilişkisinin tarafı değildir. Kullanıcılar arasında gerçekleşen anlaşmazlıklar, ödemeler veya iş ilişkisinden doğan yükümlülükler Şirket'in sorumluluğu dışındadır.</p>
+          <p>Teknik arızalar, sunucu kesintileri veya mücbir sebepler nedeniyle hizmet kesintisinden doğan dolaylı zararlar için Şirket'in sorumluluğu, kullanıcının son 1 aylık abonelik bedeli ile sınırlıdır.</p>
+
+          <h2>9. Değişiklikler</h2>
+          <p>Şirket, bu sözleşmeyi önceden bildirmeksizin değiştirme hakkını saklı tutar. Güncel sözleşme daima bu sayfada yayımlanır. Değişikliklerden haberdar olmak için periyodik olarak bu sayfayı incelemenizi öneririz. Değişiklik sonrası platform kullanımına devam etmek, yeni koşulların kabulü anlamına gelir.</p>
+
+          <h2>10. Uygulanacak Hukuk ve Yetki</h2>
+          <p>Bu sözleşme Türk Hukuku'na tabidir. Sözleşmeden doğan uyuşmazlıklarda İstanbul Mahkemeleri ve İcra Daireleri yetkilidir.</p>
+
+          <h2>11. İletişim</h2>
+          <p>Kullanıcı sözleşmesi hakkında sorularınız için: <a href="mailto:hukuk@gunlukis.com" class="text-blue-600 font-bold hover:underline">hukuk@gunlukis.com</a> veya <a href="iletisim.html" class="text-blue-600 font-bold hover:underline">iletişim sayfamızı</a> ziyaret edebilirsiniz.</p>
+
+        </div>
+
+        <div class="mt-6 flex gap-4">
+          <a href="gizlilik.html" class="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-blue-600 transition">
+            <i class="fa-solid fa-shield-halved"></i> Gizlilik Politikası
+          </a>
+          <a href="sss.html" class="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-blue-600 transition">
+            <i class="fa-regular fa-circle-question"></i> Sıkça Sorulanlar
+          </a>
+        </div>
+
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 pt-16 pb-8">
+      <div class="max-w-7xl mx-auto px-4 md:px-8">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-10">
+          <div class="md:col-span-1"><div class="flex items-center gap-2 mb-4"><div class="bg-blue-600 p-1.5 rounded-lg"><i class="fa-solid fa-briefcase text-white text-sm"></i></div><span class="text-lg font-extrabold text-slate-900">Günlükİş</span></div><p class="text-slate-500 text-sm mb-6 font-medium">Modern neslin yeni iş bulma platformu.</p><div class="flex gap-4"><a href="#" class="text-slate-400 hover:text-blue-500 text-xl transition"><i class="fa-brands fa-twitter"></i></a><a href="#" class="text-slate-400 hover:text-pink-600 text-xl transition"><i class="fa-brands fa-instagram"></i></a><a href="#" class="text-slate-400 hover:text-blue-700 text-xl transition"><i class="fa-brands fa-linkedin"></i></a></div></div>
+          <div><h4 class="font-bold text-slate-800 mb-4">Hızlı Bağlantılar</h4><ul class="space-y-3 text-sm font-medium text-slate-500"><li><a href="hakkimizda.html" class="hover:text-blue-600 transition">Hakkımızda</a></li><li><a href="iletisim.html" class="hover:text-blue-600 transition">İletişim</a></li><li><a href="sss.html" class="hover:text-blue-600 transition">Sıkça Sorulanlar</a></li></ul></div>
+          <div><h4 class="font-bold text-slate-800 mb-4">İşveren</h4><ul class="space-y-3 text-sm font-medium text-slate-500"><li><a href="is-ver.html" class="hover:text-blue-600 transition">İlan Ver</a></li><li><a href="fiyatlandirma.html" class="hover:text-blue-600 transition">Fiyatlandırma</a></li></ul></div>
+          <div><h4 class="font-bold text-slate-800 mb-4">Yasal</h4><ul class="space-y-3 text-sm font-medium text-slate-500"><li><a href="gizlilik.html" class="hover:text-blue-600 transition">Gizlilik Politikası</a></li><li><a href="kullanici-sozlesmesi.html" class="hover:text-blue-600 transition font-semibold text-blue-600">Kullanıcı Sözleşmesi</a></li></ul></div>
+        </div>
+        <div class="pt-8 border-t border-slate-100 text-center"><p class="text-slate-400 text-sm font-medium">© 2026 Günlükİş Platformu. Tüm hakları saklıdır.</p></div>
+      </div>
+    </footer>
+
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around items-center h-16 pb-safe z-50">
+      <a href="index.html" class="flex flex-col items-center gap-1 text-slate-400 w-1/4"><i class="fa-solid fa-house text-lg"></i><span class="text-[10px] font-bold">Ana Sayfa</span></a>
+      <a href="#" class="flex flex-col items-center gap-1 text-slate-400 w-1/4"><i class="fa-solid fa-magnifying-glass text-lg"></i><span class="text-[10px] font-bold">Keşfet</span></a>
+      <a href="mesaj.html" class="flex flex-col items-center gap-1 text-slate-400 w-1/4"><i class="fa-regular fa-bookmark text-lg"></i><span class="text-[10px] font-bold">Mesajlar</span></a>
+      <a href="profil.html" class="flex flex-col items-center gap-1 text-slate-400 w-1/4"><i class="fa-regular fa-user text-lg"></i><span class="text-[10px] font-bold">Profil</span></a>
+    </nav>
+
+    <script src="/js/api.js"></script>
+    <script>
+      async function toggleNotifications(e) {
+        e?.stopPropagation(); const dd=document.getElementById("notif-dropdown"); if(!dd) return;
+        if(dd.classList.contains("open")){dd.classList.remove("open");return;}
+        dd.innerHTML=`<div class="p-4 text-center text-sm text-slate-400">Yükleniyor...</div>`;dd.classList.add("open");
+        try{ const data=await apiGet("/api/notifications");const items=data.items||[];
+          dd.innerHTML=`<div class="flex items-center justify-between p-4 border-b border-slate-100"><h3 class="font-extrabold text-slate-900 text-sm"><i class="fa-regular fa-bell text-blue-600 mr-2"></i>Bildirimler</h3></div>`+(items.length===0?`<div class="p-8 text-center text-sm text-slate-400">Henüz bildirim yok.</div>`:`<div class="overflow-y-auto" style="max-height:55vh">${items.map(n=>`<div class="p-4 border-b border-slate-50 hover:bg-slate-50 ${n.is_read?"":"bg-blue-50/40"}"><p class="text-sm font-bold text-slate-900">${n.title}</p></div>`).join("")}</div>`);
+          const b=document.getElementById("notif-badge"),bm=document.getElementById("notif-badge-mobile");data.unread>0?(b?.classList.remove("hidden"),bm?.classList.remove("hidden")):(b?.classList.add("hidden"),bm?.classList.add("hidden"));
+        }catch(e){dd.innerHTML=`<div class="p-4 text-xs text-rose-500 text-center">Yüklenemedi</div>`;}
+      }
+      document.addEventListener("click",e=>{const dd=document.getElementById("notif-dropdown");if(!dd?.classList.contains("open"))return;if(!dd.contains(e.target)&&!document.getElementById("notif-bell-btn")?.contains(e.target))dd.classList.remove("open");});
+      async function loadNotifBadge(){try{const d=await apiGet("/api/notifications");if(d.unread>0){document.getElementById("notif-badge")?.classList.remove("hidden");document.getElementById("notif-badge-mobile")?.classList.remove("hidden");}}catch(e){}}
+      window.addEventListener("DOMContentLoaded",loadNotifBadge);
+    </script>
+  </body>
+</html>
