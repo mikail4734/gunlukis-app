@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Günlükİş | Şifremi Unuttum</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ["Plus Jakarta Sans","sans-serif"] } } } };</script>
+  <style>
+    body { background:linear-gradient(135deg,#eff6ff 0%,#f8fafc 50%,#eff6ff 100%);min-height:100vh; }
+    #toast-container { position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:10px; }
+    .toast { background:#1e293b;color:white;padding:12px 24px;border-radius:100px;font-size:14px;font-weight:600;box-shadow:0 10px 25px rgba(0,0,0,.12);opacity:0;transform:translateY(20px);transition:all .3s ease; }
+    .toast.show { opacity:1;transform:translateY(0); }
+    .input-field { width:100%;padding:12px 16px 12px 44px;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:12px;font-size:14px;font-weight:500;transition:all .2s;color:#0f172a; }
+    .input-field:focus { outline:none;border-color:#3b82f6;background:#fff;box-shadow:0 0 0 3px rgba(59,130,246,.1); }
+    .btn-primary { width:100%;background:#2563eb;color:white;font-weight:700;font-size:14px;padding:13px;border-radius:12px;transition:all .2s;box-shadow:0 4px 12px rgba(37,99,235,.25); }
+    .btn-primary:hover { background:#1d4ed8;transform:translateY(-1px); }
+    .btn-primary:disabled { background:#93c5fd;cursor:not-allowed;transform:none; }
+    .step { display:none; }
+    .step.active { display:block; animation:fadeIn .3s ease; }
+    @keyframes fadeIn { from { opacity:0;transform:translateY(12px); } to { opacity:1;transform:translateY(0); } }
+    .code-input { width:48px;height:56px;text-align:center;font-size:1.5rem;font-weight:800;background:#f8fafc;border:2px solid #e2e8f0;border-radius:12px;transition:all .2s;color:#0f172a; }
+    .code-input:focus { outline:none;border-color:#3b82f6;background:#fff;box-shadow:0 0 0 3px rgba(59,130,246,.1); }
+    .step-dot { width:8px;height:8px;border-radius:50%;background:#e2e8f0;transition:all .3s; }
+    .step-dot.active { background:#2563eb;width:24px;border-radius:4px; }
+    .step-dot.done { background:#22c55e; }
+  </style>
+</head>
+<body class="font-sans antialiased flex items-center justify-center min-h-screen px-4 py-12">
+
+  <div class="w-full max-w-[420px]">
+
+    <!-- Logo -->
+    <div class="text-center mb-8">
+      <a href="index.html" class="inline-flex items-center gap-3 mb-6">
+        <div class="bg-blue-600 p-3 rounded-2xl shadow-lg shadow-blue-500/30">
+          <i class="fa-solid fa-briefcase text-white text-lg"></i>
+        </div>
+        <span class="text-2xl font-extrabold text-slate-900">Günlükİş</span>
+      </a>
+
+      <!-- Step indicators -->
+      <div class="flex items-center justify-center gap-2 mb-4">
+        <div class="step-dot active" id="dot-1"></div>
+        <div class="step-dot" id="dot-2"></div>
+        <div class="step-dot" id="dot-3"></div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-3xl shadow-xl shadow-slate-200/60 border border-slate-100 p-8">
+
+      <!-- ADIM 1: E-posta gir -->
+      <div class="step active" id="step-1">
+        <div class="text-center mb-6">
+          <div class="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <i class="fa-regular fa-envelope text-blue-600 text-2xl"></i>
+          </div>
+          <h2 class="text-xl font-extrabold text-slate-900">Şifreni mi Unuttun?</h2>
+          <p class="text-slate-500 text-sm mt-1.5">E-posta adresini gir, sana 6 haneli doğrulama kodu gönderelim.</p>
+        </div>
+        <form onsubmit="sendCode(event)" class="space-y-4">
+          <div class="relative">
+            <i class="fa-regular fa-envelope absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+            <input type="email" id="reset-email" placeholder="E-posta adresiniz" class="input-field" required autocomplete="email" />
+          </div>
+          <button type="submit" id="send-btn" class="btn-primary">
+            <i class="fa-solid fa-paper-plane mr-2"></i>Kod Gönder
+          </button>
+        </form>
+      </div>
+
+      <!-- ADIM 2: Kodu doğrula -->
+      <div class="step" id="step-2">
+        <div class="text-center mb-6">
+          <div class="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <i class="fa-solid fa-shield-halved text-blue-600 text-2xl"></i>
+          </div>
+          <h2 class="text-xl font-extrabold text-slate-900">Kodu Gir</h2>
+          <p class="text-slate-500 text-sm mt-1.5">
+            <span id="email-display" class="font-bold text-slate-700"></span> adresine gönderilen 6 haneli kodu girin.
+          </p>
+        </div>
+        <div class="flex justify-center gap-2 mb-6" id="code-inputs">
+          <input class="code-input" maxlength="1" inputmode="numeric" oninput="moveNext(this,0)" />
+          <input class="code-input" maxlength="1" inputmode="numeric" oninput="moveNext(this,1)" />
+          <input class="code-input" maxlength="1" inputmode="numeric" oninput="moveNext(this,2)" />
+          <input class="code-input" maxlength="1" inputmode="numeric" oninput="moveNext(this,3)" />
+          <input class="code-input" maxlength="1" inputmode="numeric" oninput="moveNext(this,4)" />
+          <input class="code-input" maxlength="1" inputmode="numeric" oninput="moveNext(this,5)" />
+        </div>
+        <button onclick="verifyCode()" id="verify-btn" class="btn-primary">
+          Doğrula
+        </button>
+        <button onclick="resendCode()" id="resend-btn" class="w-full mt-3 text-sm font-bold text-blue-600 hover:underline py-2">
+          <i class="fa-solid fa-rotate-right mr-1"></i>Kodu Tekrar Gönder
+        </button>
+      </div>
+
+      <!-- ADIM 3: Yeni şifre -->
+      <div class="step" id="step-3">
+        <div class="text-center mb-6">
+          <div class="w-14 h-14 bg-green-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <i class="fa-solid fa-lock text-green-600 text-2xl"></i>
+          </div>
+          <h2 class="text-xl font-extrabold text-slate-900">Yeni Şifre Belirle</h2>
+          <p class="text-slate-500 text-sm mt-1.5">Güçlü bir şifre seçin (en az 6 karakter).</p>
+        </div>
+        <form onsubmit="resetPassword(event)" class="space-y-4">
+          <div class="relative">
+            <i class="fa-solid fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+            <input type="password" id="new-pwd" placeholder="Yeni şifre" class="input-field" required minlength="6" />
+            <button type="button" onclick="togglePwd('new-pwd',this)" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+              <i class="fa-regular fa-eye text-sm"></i>
+            </button>
+          </div>
+          <div class="relative">
+            <i class="fa-solid fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+            <input type="password" id="new-pwd2" placeholder="Şifreyi tekrar girin" class="input-field" required />
+            <button type="button" onclick="togglePwd('new-pwd2',this)" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+              <i class="fa-regular fa-eye text-sm"></i>
+            </button>
+          </div>
+          <button type="submit" id="reset-btn" class="btn-primary">
+            <i class="fa-solid fa-check mr-2"></i>Şifreyi Kaydet
+          </button>
+        </form>
+      </div>
+
+      <!-- ADIM 4: Başarılı -->
+      <div class="step" id="step-success">
+        <div class="text-center py-4">
+          <div class="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <i class="fa-solid fa-circle-check text-green-500 text-3xl"></i>
+          </div>
+          <h2 class="text-xl font-extrabold text-slate-900 mb-2">Şifren Güncellendi!</h2>
+          <p class="text-slate-500 text-sm mb-6">Yeni şifrenle giriş yapabilirsin.</p>
+          <a href="giris.html" class="btn-primary inline-block text-center">
+            <i class="fa-solid fa-arrow-right mr-2"></i>Giriş Yap
+          </a>
+        </div>
+      </div>
+
+    </div>
+
+    <p class="text-center mt-6">
+      <a href="giris.html" class="text-xs text-slate-400 hover:text-slate-600 font-medium">
+        <i class="fa-solid fa-arrow-left mr-1"></i>Giriş sayfasına dön
+      </a>
+    </p>
+
+  </div>
+
+  <div id="toast-container"></div>
+  <script src="/js/api.js"></script>
+  <script>
+    let resetEmail = '';
+    let verifiedCode = '';
+
+    function goToStep(n) {
+      document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+      document.getElementById('step-' + n).classList.add('active');
+      [1,2,3].forEach(i => {
+        const dot = document.getElementById('dot-' + i);
+        if (i < n) { dot.classList.add('done'); dot.classList.remove('active'); }
+        else if (i === n) { dot.classList.add('active'); dot.classList.remove('done'); }
+        else { dot.classList.remove('active','done'); }
+      });
+    }
+
+    async function sendCode(e) {
+      e.preventDefault();
+      resetEmail = document.getElementById('reset-email').value.trim();
+      const btn = document.getElementById('send-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Gönderiliyor...';
+      try {
+        await apiPost('/api/auth/forgot-password', { email: resetEmail });
+        document.getElementById('email-display').textContent = resetEmail;
+        goToStep(2);
+        setTimeout(() => document.querySelector('.code-input').focus(), 100);
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-paper-plane mr-2"></i>Kod Gönder';
+    }
+
+    function getCode() {
+      return [...document.querySelectorAll('.code-input')].map(i => i.value).join('');
+    }
+
+    function moveNext(el, idx) {
+      el.value = el.value.replace(/\D/g,'');
+      if (el.value && idx < 5) {
+        document.querySelectorAll('.code-input')[idx + 1].focus();
+      }
+      // Auto-verify when all 6 digits entered
+      if (getCode().length === 6) setTimeout(verifyCode, 200);
+    }
+
+    async function verifyCode() {
+      const code = getCode();
+      if (code.length < 6) { showToast('6 haneli kodu tam girin', 'error'); return; }
+      const btn = document.getElementById('verify-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Doğrulanıyor...';
+      try {
+        await apiPost('/api/auth/verify-reset-code', { email: resetEmail, code });
+        verifiedCode = code;
+        goToStep(3);
+        document.getElementById('dot-2').classList.replace('active','done');
+      } catch (err) {
+        showToast(err.message, 'error');
+        document.querySelectorAll('.code-input').forEach(i => { i.value=''; i.style.borderColor='#ef4444'; });
+        setTimeout(() => document.querySelectorAll('.code-input').forEach(i => i.style.borderColor=''), 1500);
+        document.querySelector('.code-input').focus();
+      }
+      btn.disabled = false;
+      btn.innerHTML = 'Doğrula';
+    }
+
+    async function resendCode() {
+      try {
+        await apiPost('/api/auth/forgot-password', { email: resetEmail });
+        showToast('Kod tekrar gönderildi');
+        document.querySelectorAll('.code-input').forEach(i => i.value='');
+        document.querySelector('.code-input').focus();
+      } catch (err) { showToast(err.message, 'error'); }
+    }
+
+    async function resetPassword(e) {
+      e.preventDefault();
+      const pwd = document.getElementById('new-pwd').value;
+      const pwd2 = document.getElementById('new-pwd2').value;
+      if (pwd !== pwd2) { showToast('Şifreler eşleşmiyor', 'error'); return; }
+      const btn = document.getElementById('reset-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Kaydediliyor...';
+      try {
+        await apiPost('/api/auth/reset-password', { email: resetEmail, code: verifiedCode, new_password: pwd });
+        document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+        document.getElementById('step-success').classList.add('active');
+        document.querySelectorAll('.step-dot').forEach(d => d.classList.add('done'));
+      } catch (err) {
+        showToast(err.message, 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-check mr-2"></i>Şifreyi Kaydet';
+      }
+    }
+
+    function togglePwd(id, btn) {
+      const inp = document.getElementById(id);
+      const isText = inp.type === 'text';
+      inp.type = isText ? 'password' : 'text';
+      btn.querySelector('i').className = isText ? 'fa-regular fa-eye text-sm' : 'fa-regular fa-eye-slash text-sm';
+    }
+
+    // Backspace navigation in code inputs
+    document.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('.code-input').forEach((inp, idx) => {
+        inp.addEventListener('keydown', (e) => {
+          if (e.key === 'Backspace' && !inp.value && idx > 0) {
+            document.querySelectorAll('.code-input')[idx - 1].focus();
+          }
+        });
+      });
+    });
+  </script>
+</body>
+</html>

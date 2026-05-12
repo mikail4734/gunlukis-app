@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Günlükİş | Giriş Yap</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ["Plus Jakarta Sans","sans-serif"] } } } };</script>
+  <style>
+    body { background: linear-gradient(135deg,#eff6ff 0%,#f8fafc 50%,#eff6ff 100%); min-height:100vh; }
+    #toast-container { position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:10px; }
+    .toast { background:#1e293b;color:white;padding:12px 24px;border-radius:100px;font-size:14px;font-weight:600;box-shadow:0 10px 25px rgba(0,0,0,.12);opacity:0;transform:translateY(20px);transition:all .3s ease; }
+    .toast.show { opacity:1;transform:translateY(0); }
+    .g-btn-wrap { display:flex;justify-content:center; }
+    input:focus { outline:none; }
+    .input-field { width:100%;padding:12px 16px 12px 44px;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:12px;font-size:14px;font-weight:500;transition:all .2s;color:#0f172a; }
+    .input-field:focus { border-color:#3b82f6;background:#fff;box-shadow:0 0 0 3px rgba(59,130,246,.1); }
+    .btn-primary { width:100%;background:#2563eb;color:white;font-weight:700;font-size:14px;padding:13px;border-radius:12px;transition:all .2s;box-shadow:0 4px 12px rgba(37,99,235,.25); }
+    .btn-primary:hover { background:#1d4ed8;transform:translateY(-1px);box-shadow:0 6px 16px rgba(37,99,235,.3); }
+    .btn-primary:disabled { background:#93c5fd;cursor:not-allowed;transform:none; }
+    .divider { display:flex;align-items:center;gap:12px;color:#94a3b8;font-size:13px;font-weight:600; }
+    .divider::before,.divider::after { content:'';flex:1;height:1px;background:#e2e8f0; }
+  </style>
+</head>
+<body class="font-sans antialiased flex items-center justify-center min-h-screen px-4 py-12">
+
+  <div class="w-full max-w-[420px]">
+
+    <!-- Logo -->
+    <div class="text-center mb-8">
+      <a href="index.html" class="inline-flex items-center gap-3 mb-6">
+        <div class="bg-blue-600 p-3 rounded-2xl shadow-lg shadow-blue-500/30">
+          <i class="fa-solid fa-briefcase text-white text-lg"></i>
+        </div>
+        <span class="text-2xl font-extrabold text-slate-900">Günlükİş</span>
+      </a>
+      <h1 class="text-2xl font-extrabold text-slate-900">Hesabına Giriş Yap</h1>
+      <p class="text-slate-500 text-sm mt-1 font-medium">İş fırsatlarına erişmek için giriş yapın</p>
+    </div>
+
+    <!-- Card -->
+    <div class="bg-white rounded-3xl shadow-xl shadow-slate-200/60 border border-slate-100 p-8">
+
+      <!-- Google ile Giriş -->
+      <div id="google-btn-container" class="mb-5">
+        <div id="google-gsi-btn" class="g-btn-wrap"></div>
+        <button id="google-fallback-btn" onclick="googleSignIn()"
+          class="hidden w-full flex items-center justify-center gap-3 border-2 border-slate-200 text-slate-700 font-bold py-3 rounded-xl hover:border-blue-300 hover:bg-blue-50 transition text-sm">
+          <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+          Google ile Devam Et
+        </button>
+      </div>
+
+      <div class="divider mb-5">veya e-posta ile</div>
+
+      <!-- E-posta Formu -->
+      <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
+        <div class="relative">
+          <i class="fa-regular fa-envelope absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+          <input type="email" id="login-email" placeholder="E-posta adresiniz" class="input-field" required autocomplete="email" />
+        </div>
+        <div class="relative">
+          <i class="fa-solid fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+          <input type="password" id="login-password" placeholder="Şifreniz" class="input-field" required autocomplete="current-password" />
+          <button type="button" onclick="togglePwd('login-password',this)" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+            <i class="fa-regular fa-eye text-sm"></i>
+          </button>
+        </div>
+        <div class="flex justify-end">
+          <a href="sifremi-unuttum.html" class="text-xs font-bold text-blue-600 hover:underline">Şifremi Unuttum</a>
+        </div>
+        <button type="submit" id="login-btn" class="btn-primary">
+          Giriş Yap
+        </button>
+      </form>
+
+    </div>
+
+    <!-- Kayıt -->
+    <p class="text-center text-sm text-slate-500 font-medium mt-6">
+      Hesabın yok mu?
+      <a href="kayit.html" class="text-blue-600 font-bold hover:underline ml-1">Ücretsiz Kaydol</a>
+    </p>
+    <p class="text-center mt-4">
+      <a href="index.html" class="text-xs text-slate-400 hover:text-slate-600 font-medium">
+        <i class="fa-solid fa-arrow-left mr-1"></i> Ana sayfaya dön
+      </a>
+    </p>
+
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    let googleClientId = '';
+
+    // Google config yükle
+    async function loadGoogleConfig() {
+      try {
+        const cfg = await fetch('/api/auth/config').then(r => r.json());
+        googleClientId = cfg.google_client_id || '';
+        if (googleClientId) {
+          initGoogle();
+        } else {
+          document.getElementById('google-fallback-btn').classList.remove('hidden');
+        }
+      } catch { document.getElementById('google-fallback-btn').classList.remove('hidden'); }
+    }
+
+    function initGoogle() {
+      if (!window.google) { setTimeout(initGoogle, 300); return; }
+      google.accounts.id.initialize({
+        client_id: googleClientId,
+        callback: handleGoogleCredential,
+        auto_select: false,
+      });
+      google.accounts.id.renderButton(
+        document.getElementById('google-gsi-btn'),
+        { theme: 'outline', size: 'large', width: 352, text: 'continue_with', shape: 'rectangular', logo_alignment: 'center' }
+      );
+    }
+
+    async function handleGoogleCredential(response) {
+      try {
+        setLoading(true);
+        const data = await apiPost('/api/auth/google', { credential: response.credential });
+        if (data.success) {
+          localStorage.setItem('gu_user', JSON.stringify(data.user));
+          showToast('Hoş geldin, ' + data.user.full_name + '!');
+          setTimeout(() => window.location.href = 'index.html', 800);
+        }
+      } catch (err) {
+        showToast(err.message, 'error');
+        setLoading(false);
+      }
+    }
+
+    async function googleSignIn() {
+      if (!googleClientId) {
+        showToast('Google Client ID yapılandırılmamış. .env dosyasını kontrol edin.', 'error');
+        return;
+      }
+      if (window.google) google.accounts.id.prompt();
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const email = document.getElementById('login-email').value;
+      const password = document.getElementById('login-password').value;
+      try {
+        setLoading(true);
+        const data = await apiPost('/api/auth/login', { email, password });
+        if (data.success) {
+          localStorage.setItem('gu_user', JSON.stringify(data.user));
+          showToast('Hoş geldin!');
+          const redirect = new URLSearchParams(location.search).get('redirect') || 'index.html';
+          setTimeout(() => window.location.href = redirect, 800);
+        }
+      } catch (err) {
+        showToast(err.message, 'error');
+        setLoading(false);
+      }
+    }
+
+    function setLoading(on) {
+      const btn = document.getElementById('login-btn');
+      btn.disabled = on;
+      btn.innerHTML = on
+        ? '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Giriş yapılıyor...'
+        : 'Giriş Yap';
+    }
+
+    function togglePwd(id, btn) {
+      const inp = document.getElementById(id);
+      const isText = inp.type === 'text';
+      inp.type = isText ? 'password' : 'text';
+      btn.querySelector('i').className = isText ? 'fa-regular fa-eye text-sm' : 'fa-regular fa-eye-slash text-sm';
+    }
+
+    // Zaten giriş yapmışsa yönlendir
+    async function checkAuth() {
+      try {
+        await apiGet('/api/auth/me');
+        window.location.href = 'index.html';
+      } catch {}
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      checkAuth();
+      loadGoogleConfig();
+    });
+  </script>
+</body>
+</html>

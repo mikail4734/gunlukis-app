@@ -122,20 +122,18 @@
             </div>
             <div class="relative group cursor-pointer ml-2 py-4">
               <div class="flex items-center gap-2">
-                <img src="https://i.pravatar.cc/150?img=32" alt="Profil"
+                <img id="header-avatar" src="https://i.pravatar.cc/150?img=32" alt="Profil"
                   class="w-10 h-10 rounded-full object-cover border-2 border-slate-100 hover:border-blue-200 transition-colors" />
                 <i class="fa-solid fa-chevron-down text-slate-400 text-[10px] transition-transform duration-300 group-hover:rotate-180"></i>
               </div>
               <div class="absolute right-0 top-full mt-[-5px] w-60 bg-white border border-slate-100 rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 py-2 z-50">
                 <a href="profil.html" class="block px-5 py-3 text-[15px] font-bold text-slate-800 hover:bg-slate-50 hover:text-blue-600 transition">Üye profiline git</a>
                 <div class="h-px bg-slate-100 my-1"></div>
-                <a href="#" class="block px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition">Başvurularım</a>
-                <a href="#" class="block px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition">Favori İlanlarım</a>
-                <a href="#" class="block px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition">Özgeçmişler</a>
-                <a href="#" class="block px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition">İş Tercihleri</a>
+                <a href="profil.html#basvurularim" class="block px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition">Başvurularım</a>
+                <a href="profil.html#favorilerim" class="block px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition">Favori İlanlarım</a>
                 <div class="h-px bg-slate-100 my-1"></div>
-                <a href="#" class="block px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition">Ayarlar</a>
-                <a href="#" class="block px-5 py-2.5 text-sm font-bold text-red-500 hover:bg-red-50 transition">Çıkış</a>
+                <a href="ayarlar.html" class="block px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition">Ayarlar</a>
+                <button onclick="logoutUser()" class="block px-5 py-2.5 text-sm font-bold text-red-500 hover:bg-red-50 transition">Çıkış</button>
               </div>
             </div>
           </div>
@@ -145,7 +143,7 @@
               <i class="fa-regular fa-bell text-xl"></i>
               <span id="notif-badge-mobile" class="hidden absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 border-2 border-white rounded-full"></span>
             </button>
-            <a href="profil.html"><img
+            <a href="profil.html"><img id="header-avatar-m"
               src="https://i.pravatar.cc/150?img=32"
               alt="Profil"
               class="w-9 h-9 rounded-full object-cover border border-slate-200"
@@ -607,6 +605,7 @@
         await loadConversations();
         if (chats.length > 0) loadChat(chats[0].id);
         loadNotifBadge();
+        loadHeaderUser();
 
         // Sayfa herhangi yere tıklandığında dropdown menüleri kapat
         document.addEventListener("click", (e) => {
@@ -974,7 +973,7 @@
               (m) => `
             <div class="flex items-center gap-3 p-2.5 hover:bg-slate-50 rounded-xl">
               <div class="relative">
-                <img src="${m.avatar_url || "https://i.pravatar.cc/150?u=" + m.id}" class="w-10 h-10 rounded-full object-cover">
+                <img id="header-avatar" src="${m.avatar_url || "https://i.pravatar.cc/150?u=" + m.id}" class="w-10 h-10 rounded-full object-cover">
                 ${m.is_online ? '<div class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full"></div>' : ""}
               </div>
               <div class="flex-1 min-w-0">
@@ -1071,7 +1070,7 @@
               return `
               <div onclick="toggleMember(${u.id}, '${escapeAttr(u.full_name)}', '${escapeAttr(u.avatar_url || "")}')"
                 class="flex items-center gap-3 p-3 cursor-pointer transition border-b border-slate-100 last:border-b-0 ${isSelected ? "bg-blue-50" : "hover:bg-slate-50"}">
-                <img src="${u.avatar_url || "https://i.pravatar.cc/150?u=" + u.id}" class="w-10 h-10 rounded-full object-cover">
+                <img id="header-avatar" src="${u.avatar_url || "https://i.pravatar.cc/150?u=" + u.id}" class="w-10 h-10 rounded-full object-cover">
                 <div class="flex-1 min-w-0">
                   <p class="font-bold text-sm text-slate-900 truncate">${escapeHtml(u.full_name)}</p>
                   <p class="text-[11px] font-medium text-slate-500 truncate">${escapeHtml(u.title || "")}</p>

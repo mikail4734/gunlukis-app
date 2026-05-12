@@ -65,3 +65,32 @@ function formatTurkishDate(dateStr) {
 function formatBudget(amount) {
   return new Intl.NumberFormat('tr-TR').format(amount);
 }
+
+// ─── Auth Yardımcıları ─────────────────────────────────────────────────────
+
+// Header'daki avatar + dropdown'u gerçek kullanıcı ile günceller
+async function loadHeaderUser() {
+  try {
+    const user = await apiGet('/api/auth/me');
+    // Avatar
+    if (user.avatar_url) {
+      document.querySelectorAll('#header-avatar').forEach(el => el.src = user.avatar_url);
+      document.querySelectorAll('#header-avatar-m').forEach(el => el.src = user.avatar_url);
+    }
+    // Dropdown'daki isim varsa güncelle
+    const nameEl = document.getElementById('header-user-name');
+    if (nameEl) nameEl.textContent = user.full_name;
+    // localStorage cache
+    localStorage.setItem('gu_user', JSON.stringify(user));
+    return user;
+  } catch {
+    return null; // Giriş yapılmamış, sessizce geç
+  }
+}
+
+// Çıkış yap (tüm sayfalardan çağrılabilir)
+async function logoutUser() {
+  try { await apiPost('/api/auth/logout'); } catch {}
+  localStorage.removeItem('gu_user');
+  window.location.href = 'giris.html';
+}

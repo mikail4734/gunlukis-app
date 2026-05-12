@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Günlükİş | Ayarlar</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{fontFamily:{sans:["Plus Jakarta Sans","sans-serif"]}}}};</script>
+  <style>
+    body{background:#f8fafc;-webkit-tap-highlight-color:transparent;}
+    .glass-nav{background:rgba(255,255,255,.9);backdrop-filter:blur(12px);border-bottom:1px solid rgba(226,232,240,.8);}
+    .notif-dropdown{position:absolute;top:55px;right:0;width:380px;max-width:90vw;max-height:70vh;background:white;border-radius:1.25rem;box-shadow:0 20px 50px rgba(0,0,0,.15);border:1px solid #e2e8f0;z-index:60;display:none;flex-direction:column;overflow:hidden;}
+    .notif-dropdown.open{display:flex;}
+    #toast-container{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:10px;}
+    .toast{background:#1e293b;color:white;padding:12px 24px;border-radius:100px;font-size:14px;font-weight:600;box-shadow:0 10px 25px rgba(0,0,0,.1);opacity:0;transform:translateY(20px);transition:all .3s ease;}
+    .toast.show{opacity:1;transform:translateY(0);}
+    .settings-card{background:white;border:1px solid #f1f5f9;border-radius:1.5rem;padding:24px;}
+    .input-field{width:100%;padding:11px 16px;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;font-size:14px;font-weight:500;transition:all .2s;color:#0f172a;}
+    .input-field:focus{outline:none;border-color:#3b82f6;background:#fff;box-shadow:0 0 0 3px rgba(59,130,246,.1);}
+    .tab-btn{padding:10px 20px;border-radius:10px;font-size:14px;font-weight:700;color:#64748b;transition:all .2s;cursor:pointer;}
+    .tab-btn.active{background:#eff6ff;color:#2563eb;}
+  </style>
+</head>
+<body class="font-sans antialiased pb-20 md:pb-0">
+
+  <!-- Header -->
+  <header class="fixed top-0 left-0 right-0 z-50 glass-nav">
+    <div class="max-w-7xl mx-auto px-4 lg:px-8">
+      <div class="flex items-center justify-between h-16 md:h-20">
+        <a href="index.html" class="flex items-center gap-3">
+          <div class="bg-blue-600 p-2.5 rounded-xl shadow-lg shadow-blue-500/30"><i class="fa-solid fa-briefcase text-white text-sm"></i></div>
+          <span class="text-xl font-extrabold tracking-tight text-slate-900">Günlükİş</span>
+        </a>
+        <div class="hidden md:flex items-center gap-4">
+          <button class="text-sm font-bold bg-slate-900 text-white px-6 py-2.5 rounded-full hover:bg-slate-800 transition shadow-md">İş Ver</button>
+          <div class="w-px h-6 bg-slate-200 mx-2"></div>
+          <div class="relative">
+            <button onclick="toggleNotifications(event)" id="notif-bell-btn" class="relative p-2 text-slate-500 hover:text-slate-900 transition">
+              <i class="fa-regular fa-bell text-xl"></i>
+              <span id="notif-badge" class="hidden absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 border-2 border-white rounded-full"></span>
+            </button>
+            <div id="notif-dropdown" class="notif-dropdown"></div>
+          </div>
+          <div class="relative group cursor-pointer ml-2 py-4">
+            <div class="flex items-center gap-2">
+              <img id="header-avatar" src="https://i.pravatar.cc/150?img=32" alt="Profil" class="w-10 h-10 rounded-full object-cover border-2 border-slate-100" />
+              <i class="fa-solid fa-chevron-down text-slate-400 text-[10px] transition-transform duration-300 group-hover:rotate-180"></i>
+            </div>
+            <div class="absolute right-0 top-full mt-[-5px] w-60 bg-white border border-slate-100 rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,.1)] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 py-2 z-50">
+              <a href="profil.html" class="block px-5 py-3 text-[15px] font-bold text-slate-800 hover:bg-slate-50 hover:text-blue-600 transition">Üye profiline git</a>
+              <div class="h-px bg-slate-100 my-1"></div>
+              <a href="profil.html#basvurularim" class="block px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition">Başvurularım</a>
+              <a href="profil.html#favorilerim" class="block px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition">Favori İlanlarım</a>
+              <div class="h-px bg-slate-100 my-1"></div>
+              <a href="ayarlar.html" class="block px-5 py-2.5 text-sm font-semibold text-blue-600 bg-blue-50">Ayarlar</a>
+              <button onclick="logoutUser()" class="w-full text-left block px-5 py-2.5 text-sm font-bold text-red-500 hover:bg-red-50 transition">Çıkış</button>
+            </div>
+          </div>
+        </div>
+        <div class="md:hidden flex items-center gap-4">
+          <button onclick="toggleNotifications(event)" class="relative text-slate-500">
+            <i class="fa-regular fa-bell text-xl"></i>
+            <span id="notif-badge-mobile" class="hidden absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 border-2 border-white rounded-full"></span>
+          </button>
+          <a href="profil.html"><img id="header-avatar-m" src="https://i.pravatar.cc/150?img=32" alt="Profil" class="w-9 h-9 rounded-full object-cover border border-slate-200" /></a>
+        </div>
+      </div>
+      <nav class="hidden md:flex items-center justify-center gap-10 h-14 text-sm font-bold text-slate-500 border-t border-slate-200/60">
+        <a href="index.html" class="flex items-center gap-2 hover:text-slate-800 transition h-full"><i class="fa-solid fa-layer-group"></i> İşler</a>
+        <a href="takvim.html" class="flex items-center gap-2 hover:text-slate-800 transition h-full"><i class="fa-regular fa-calendar"></i> Takvim</a>
+        <a href="mesaj.html" class="flex items-center gap-2 hover:text-slate-800 transition h-full"><i class="fa-regular fa-message"></i> Mesajlar</a>
+        <a href="anket.html" class="flex items-center gap-2 hover:text-slate-800 transition h-full"><i class="fa-solid fa-chart-simple"></i> Anket</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="pt-36 md:pt-44 pb-20 px-4 max-w-3xl mx-auto">
+
+    <div class="flex items-center gap-3 mb-8">
+      <div class="w-11 h-11 bg-blue-50 rounded-xl flex items-center justify-center">
+        <i class="fa-solid fa-gear text-blue-600"></i>
+      </div>
+      <div>
+        <h1 class="text-2xl font-extrabold text-slate-900">Ayarlar</h1>
+        <p class="text-slate-500 text-sm">Hesap bilgilerini düzenle</p>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="flex gap-2 mb-6 bg-slate-100 p-1.5 rounded-xl w-fit">
+      <button class="tab-btn active" onclick="switchTab('profile',this)">
+        <i class="fa-solid fa-user mr-1.5"></i>Profil
+      </button>
+      <button class="tab-btn" onclick="switchTab('security',this)">
+        <i class="fa-solid fa-lock mr-1.5"></i>Güvenlik
+      </button>
+      <button class="tab-btn" onclick="switchTab('danger',this)">
+        <i class="fa-solid fa-triangle-exclamation mr-1.5"></i>Hesap
+      </button>
+    </div>
+
+    <!-- Profil Tab -->
+    <div id="tab-profile">
+      <div class="settings-card">
+        <h3 class="text-base font-extrabold text-slate-900 mb-5 flex items-center gap-2">
+          <i class="fa-solid fa-user-circle text-blue-500"></i> Kişisel Bilgiler
+        </h3>
+
+        <!-- Avatar -->
+        <div class="flex items-center gap-4 mb-6 pb-6 border-b border-slate-100">
+          <div class="relative">
+            <img id="settings-avatar" src="https://i.pravatar.cc/150?img=32" class="w-16 h-16 rounded-2xl object-cover border-2 border-slate-200" />
+            <div class="absolute -bottom-1 -right-1 w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center cursor-pointer hover:bg-blue-700 transition" onclick="document.getElementById('avatar-upload').click()">
+              <i class="fa-solid fa-camera text-white text-[9px]"></i>
+            </div>
+          </div>
+          <div>
+            <p class="font-bold text-slate-900" id="settings-name-display">Yükleniyor...</p>
+            <p class="text-sm text-slate-500" id="settings-email-display"></p>
+            <button onclick="document.getElementById('avatar-upload').click()" class="text-xs font-bold text-blue-600 hover:underline mt-1">Fotoğrafı değiştir</button>
+          </div>
+          <input type="file" id="avatar-upload" accept="image/*" class="hidden" onchange="uploadAvatar(this)" />
+        </div>
+
+        <form id="profile-form" onsubmit="saveProfile(event)" class="space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Ad Soyad</label>
+            <input type="text" id="settings-fullname" class="input-field" placeholder="Ad Soyad" required />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Telefon</label>
+            <input type="tel" id="settings-phone" class="input-field" placeholder="+90 5__ ___ __ __" />
+          </div>
+          <div class="pt-2">
+            <button type="submit" id="profile-save-btn"
+              class="bg-blue-600 text-white font-bold px-6 py-2.5 rounded-xl hover:bg-blue-700 transition shadow-md shadow-blue-500/20 text-sm">
+              <i class="fa-solid fa-check mr-2"></i>Değişiklikleri Kaydet
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Güvenlik Tab -->
+    <div id="tab-security" class="hidden">
+      <div class="settings-card">
+        <h3 class="text-base font-extrabold text-slate-900 mb-5 flex items-center gap-2">
+          <i class="fa-solid fa-lock text-blue-500"></i> Şifre Değiştir
+        </h3>
+        <div id="google-pwd-notice" class="hidden bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4 text-sm text-amber-700 font-medium flex gap-3">
+          <i class="fa-brands fa-google mt-0.5 shrink-0"></i>
+          <span>Google hesabıyla giriş yaptığınız için şifre değiştiremezsiniz.</span>
+        </div>
+        <form id="pwd-form" onsubmit="changePassword(event)" class="space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Mevcut Şifre</label>
+            <div class="relative">
+              <input type="password" id="cur-pwd" class="input-field" placeholder="Mevcut şifreniz" />
+              <button type="button" onclick="togglePwd('cur-pwd',this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                <i class="fa-regular fa-eye text-sm"></i>
+              </button>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Yeni Şifre</label>
+            <div class="relative">
+              <input type="password" id="new-pwd" class="input-field" placeholder="En az 6 karakter" minlength="6" />
+              <button type="button" onclick="togglePwd('new-pwd',this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                <i class="fa-regular fa-eye text-sm"></i>
+              </button>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Yeni Şifre (Tekrar)</label>
+            <div class="relative">
+              <input type="password" id="new-pwd2" class="input-field" placeholder="Şifreyi tekrar girin" />
+              <button type="button" onclick="togglePwd('new-pwd2',this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                <i class="fa-regular fa-eye text-sm"></i>
+              </button>
+            </div>
+          </div>
+          <button type="submit" id="pwd-save-btn"
+            class="bg-blue-600 text-white font-bold px-6 py-2.5 rounded-xl hover:bg-blue-700 transition shadow-md shadow-blue-500/20 text-sm">
+            <i class="fa-solid fa-lock mr-2"></i>Şifreyi Güncelle
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Hesap/Tehlike Bölgesi Tab -->
+    <div id="tab-danger" class="hidden">
+      <div class="settings-card border-red-100">
+        <h3 class="text-base font-extrabold text-slate-900 mb-5 flex items-center gap-2">
+          <i class="fa-solid fa-circle-exclamation text-red-500"></i> Hesap İşlemleri
+        </h3>
+        <div class="space-y-4">
+          <div class="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
+            <div>
+              <p class="font-bold text-slate-800 text-sm">Oturumu Kapat</p>
+              <p class="text-xs text-slate-500 mt-0.5">Tüm cihazlardan çıkış yap</p>
+            </div>
+            <button onclick="logoutUser()" class="bg-white border border-slate-200 text-slate-700 font-bold px-4 py-2 rounded-xl text-sm hover:border-red-300 hover:text-red-600 transition">
+              <i class="fa-solid fa-arrow-right-from-bracket mr-2"></i>Çıkış Yap
+            </button>
+          </div>
+          <div class="flex items-center justify-between p-4 bg-red-50 rounded-xl border border-red-100">
+            <div>
+              <p class="font-bold text-red-700 text-sm">Hesabı Sil</p>
+              <p class="text-xs text-red-500 mt-0.5">Tüm veriler kalıcı olarak silinir</p>
+            </div>
+            <button onclick="showToast('Bu özellik yakında eklenecek', 'error')"
+              class="bg-white border border-red-200 text-red-600 font-bold px-4 py-2 rounded-xl text-sm hover:bg-red-600 hover:text-white transition">
+              Hesabı Sil
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Mobile Nav -->
+  <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around items-center h-16 pb-safe z-50">
+    <a href="index.html" class="flex flex-col items-center gap-1 text-slate-400 w-1/4"><i class="fa-solid fa-house text-lg"></i><span class="text-[10px] font-bold">Ana Sayfa</span></a>
+    <a href="#" class="flex flex-col items-center gap-1 text-slate-400 w-1/4"><i class="fa-solid fa-magnifying-glass text-lg"></i><span class="text-[10px] font-bold">Keşfet</span></a>
+    <a href="mesaj.html" class="flex flex-col items-center gap-1 text-slate-400 w-1/4"><i class="fa-regular fa-bookmark text-lg"></i><span class="text-[10px] font-bold">Mesajlar</span></a>
+    <a href="profil.html" class="flex flex-col items-center gap-1 text-slate-400 w-1/4"><i class="fa-regular fa-user text-lg"></i><span class="text-[10px] font-bold">Profil</span></a>
+  </nav>
+
+  <div id="toast-container"></div>
+  <script src="/js/api.js"></script>
+  <script>
+    let currentUser = null;
+
+    async function loadUser() {
+      try {
+        currentUser = await apiGet('/api/auth/me');
+        // Header
+        if (currentUser.avatar_url) {
+          document.getElementById('header-avatar').src = currentUser.avatar_url;
+          document.getElementById('header-avatar-m').src = currentUser.avatar_url;
+          document.getElementById('settings-avatar').src = currentUser.avatar_url;
+        }
+        document.getElementById('settings-name-display').textContent = currentUser.full_name;
+        document.getElementById('settings-email-display').textContent = currentUser.email;
+        document.getElementById('settings-fullname').value = currentUser.full_name;
+        document.getElementById('settings-phone').value = currentUser.phone || '';
+      } catch {
+        window.location.href = 'giris.html?redirect=ayarlar.html';
+      }
+    }
+
+    function switchTab(tab, btn) {
+      ['profile','security','danger'].forEach(t => document.getElementById('tab-'+t).classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('tab-'+tab).classList.remove('hidden');
+      btn.classList.add('active');
+    }
+
+    async function saveProfile(e) {
+      e.preventDefault();
+      const btn = document.getElementById('profile-save-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Kaydediliyor...';
+      try {
+        await apiPut('/api/auth/me', {
+          full_name: document.getElementById('settings-fullname').value,
+          phone: document.getElementById('settings-phone').value || null
+        });
+        showToast('Profil güncellendi!');
+        await loadUser();
+      } catch (err) { showToast(err.message, 'error'); }
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-check mr-2"></i>Değişiklikleri Kaydet';
+    }
+
+    async function changePassword(e) {
+      e.preventDefault();
+      const cur = document.getElementById('cur-pwd').value;
+      const nw = document.getElementById('new-pwd').value;
+      const nw2 = document.getElementById('new-pwd2').value;
+      if (nw !== nw2) { showToast('Şifreler eşleşmiyor', 'error'); return; }
+      const btn = document.getElementById('pwd-save-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Güncelleniyor...';
+      try {
+        await apiPut('/api/auth/me', { current_password: cur, new_password: nw });
+        showToast('Şifre güncellendi!');
+        document.getElementById('pwd-form').reset();
+      } catch (err) { showToast(err.message, 'error'); }
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-lock mr-2"></i>Şifreyi Güncelle';
+    }
+
+    async function uploadAvatar(input) {
+      const file = input.files[0];
+      if (!file) return;
+      if (file.size > 2 * 1024 * 1024) { showToast('Dosya boyutu 2MB\'dan büyük olamaz', 'error'); return; }
+      // Simple: convert to base64 and show preview (actual upload needs multer endpoint)
+      const reader = new FileReader();
+      reader.onload = e => {
+        document.getElementById('settings-avatar').src = e.target.result;
+        document.getElementById('header-avatar').src = e.target.result;
+        showToast('Fotoğraf güncellendi (önizleme)');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    async function logoutUser() {
+      try {
+        await apiPost('/api/auth/logout');
+        localStorage.removeItem('gu_user');
+        window.location.href = 'giris.html';
+      } catch { window.location.href = 'giris.html'; }
+    }
+
+    function togglePwd(id, btn) {
+      const inp = document.getElementById(id);
+      const isText = inp.type === 'text';
+      inp.type = isText ? 'password' : 'text';
+      btn.querySelector('i').className = isText ? 'fa-regular fa-eye text-sm' : 'fa-regular fa-eye-slash text-sm';
+    }
+
+    async function toggleNotifications(e) {
+      e?.stopPropagation();const dd=document.getElementById("notif-dropdown");if(!dd)return;
+      if(dd.classList.contains("open")){dd.classList.remove("open");return;}
+      dd.innerHTML=`<div class="p-4 text-center text-sm text-slate-400">Yükleniyor...</div>`;dd.classList.add("open");
+      try{const data=await apiGet("/api/notifications");const items=data.items||[];
+        dd.innerHTML=`<div class="p-4 border-b border-slate-100 font-extrabold text-slate-900 text-sm"><i class="fa-regular fa-bell text-blue-600 mr-2"></i>Bildirimler</div>`+(items.length===0?`<div class="p-8 text-center text-sm text-slate-400">Henüz bildirim yok.</div>`:`<div class="overflow-y-auto" style="max-height:55vh">${items.map(n=>`<div class="p-4 border-b border-slate-50 hover:bg-slate-50 ${n.is_read?"":"bg-blue-50/40"}"><p class="text-sm font-bold text-slate-900">${n.title}</p></div>`).join("")}</div>`);
+        const b=document.getElementById("notif-badge"),bm=document.getElementById("notif-badge-mobile");data.unread>0?(b?.classList.remove("hidden"),bm?.classList.remove("hidden")):(b?.classList.add("hidden"),bm?.classList.add("hidden"));
+      }catch{dd.innerHTML=`<div class="p-4 text-xs text-rose-500 text-center">Yüklenemedi</div>`;}
+    }
+    document.addEventListener("click",e=>{const dd=document.getElementById("notif-dropdown");if(!dd?.classList.contains("open"))return;if(!dd.contains(e.target)&&!document.getElementById("notif-bell-btn")?.contains(e.target))dd.classList.remove("open");});
+    async function loadNotifBadge(){try{const d=await apiGet("/api/notifications");if(d.unread>0){document.getElementById("notif-badge")?.classList.remove("hidden");document.getElementById("notif-badge-mobile")?.classList.remove("hidden");}}catch{}}
+
+    window.addEventListener('DOMContentLoaded', () => { loadUser(); loadNotifBadge(); });
+  </script>
+</body>
+</html>

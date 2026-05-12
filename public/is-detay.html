@@ -152,13 +152,11 @@
               <div class="absolute right-0 top-full mt-[-5px] w-60 bg-white border border-slate-100 rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 py-2 z-50">
                 <a href="profil.html" class="block px-5 py-3 text-[15px] font-bold text-slate-800 hover:bg-slate-50 hover:text-blue-600 transition">Üye profiline git</a>
                 <div class="h-px bg-slate-100 my-1"></div>
-                <a href="#" class="block px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition">Başvurularım</a>
-                <a href="#" class="block px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition">Favori İlanlarım</a>
-                <a href="#" class="block px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition">Özgeçmişler</a>
-                <a href="#" class="block px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition">İş Tercihleri</a>
+                <a href="profil.html#basvurularim" class="block px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition">Başvurularım</a>
+                <a href="profil.html#favorilerim" class="block px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition">Favori İlanlarım</a>
                 <div class="h-px bg-slate-100 my-1"></div>
-                <a href="#" class="block px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition">Ayarlar</a>
-                <a href="#" class="block px-5 py-2.5 text-sm font-bold text-red-500 hover:bg-red-50 transition">Çıkış</a>
+                <a href="ayarlar.html" class="block px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition">Ayarlar</a>
+                <button onclick="logoutUser()" class="block px-5 py-2.5 text-sm font-bold text-red-500 hover:bg-red-50 transition">Çıkış</button>
               </div>
             </div>
           </div>
@@ -521,6 +519,7 @@
       window.addEventListener('DOMContentLoaded', () => {
         loadJobDetail();
         loadNotifBadge();
+        loadHeaderUser();
       });
 
       // ============== BİLDİRİMLER ==============

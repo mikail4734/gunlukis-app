@@ -162,20 +162,18 @@
             </div>
             <div class="relative group cursor-pointer ml-2 py-4">
               <div class="flex items-center gap-2">
-                <img src="https://i.pravatar.cc/150?img=32" alt="Profil"
+                <img id="header-avatar" src="https://i.pravatar.cc/150?img=32" alt="Profil"
                   class="w-10 h-10 rounded-full object-cover border-2 border-slate-100 hover:border-blue-200 transition-colors" />
                 <i class="fa-solid fa-chevron-down text-slate-400 text-[10px] transition-transform duration-300 group-hover:rotate-180"></i>
               </div>
               <div class="absolute right-0 top-full mt-[-5px] w-60 bg-white border border-slate-100 rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 py-2 z-50">
                 <a href="profil.html" class="block px-5 py-3 text-[15px] font-bold text-slate-800 hover:bg-slate-50 hover:text-blue-600 transition">Üye profiline git</a>
                 <div class="h-px bg-slate-100 my-1"></div>
-                <a href="#" class="block px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition">Başvurularım</a>
-                <a href="#" class="block px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition">Favori İlanlarım</a>
-                <a href="#" class="block px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition">Özgeçmişler</a>
-                <a href="#" class="block px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition">İş Tercihleri</a>
+                <a href="profil.html#basvurularim" class="block px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition">Başvurularım</a>
+                <a href="profil.html#favorilerim" class="block px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition">Favori İlanlarım</a>
                 <div class="h-px bg-slate-100 my-1"></div>
-                <a href="#" class="block px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition">Ayarlar</a>
-                <a href="#" class="block px-5 py-2.5 text-sm font-bold text-red-500 hover:bg-red-50 transition">Çıkış</a>
+                <a href="ayarlar.html" class="block px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition">Ayarlar</a>
+                <button onclick="logoutUser()" class="block px-5 py-2.5 text-sm font-bold text-red-500 hover:bg-red-50 transition">Çıkış</button>
               </div>
             </div>
           </div>
@@ -186,6 +184,7 @@
               <span id="notif-badge-mobile" class="hidden absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 border-2 border-white rounded-full"></span>
             </button>
             <a href="profil.html"><img
+              id="header-avatar-m"
               src="https://i.pravatar.cc/150?img=32"
               alt="Profil"
               class="w-9 h-9 rounded-full object-cover border border-slate-200"
@@ -432,6 +431,20 @@
               >
                 Değerlendirmeler
               </button>
+              <button
+                onclick="switchTab('basvurularim')"
+                id="tab-btn-basvurularim"
+                class="pb-4 text-[15px] font-bold text-slate-500 hover:text-slate-800 border-b-2 border-transparent transition whitespace-nowrap"
+              >
+                <i class="fa-solid fa-file-lines mr-1.5 text-sm"></i>Başvurularım
+              </button>
+              <button
+                onclick="switchTab('favorilerim')"
+                id="tab-btn-favorilerim"
+                class="pb-4 text-[15px] font-bold text-slate-500 hover:text-slate-800 border-b-2 border-transparent transition whitespace-nowrap"
+              >
+                <i class="fa-regular fa-bookmark mr-1.5 text-sm"></i>Favori İlanlarım
+              </button>
             </div>
 
             <div id="tab-hakkimda" class="tab-content active">
@@ -601,6 +614,35 @@
                 </div>
               </div>
             </div>
+
+            <!-- ── BAŞVURULARIM TAB ── -->
+            <div id="tab-basvurularim" class="tab-content">
+              <div class="flex items-center justify-between mb-6">
+                <h3 class="font-extrabold text-slate-900 text-lg">Başvurularım</h3>
+                <span id="app-count" class="text-xs font-bold text-slate-400 bg-slate-100 px-3 py-1 rounded-full"></span>
+              </div>
+              <div id="app-list">
+                <div class="text-center py-12 text-slate-400">
+                  <i class="fa-solid fa-spinner fa-spin text-2xl mb-3"></i>
+                  <p class="text-sm">Yükleniyor...</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- ── FAVORİLERİM TAB ── -->
+            <div id="tab-favorilerim" class="tab-content">
+              <div class="flex items-center justify-between mb-6">
+                <h3 class="font-extrabold text-slate-900 text-lg">Favori İlanlarım</h3>
+                <span id="fav-count" class="text-xs font-bold text-slate-400 bg-slate-100 px-3 py-1 rounded-full"></span>
+              </div>
+              <div id="fav-list">
+                <div class="text-center py-12 text-slate-400">
+                  <i class="fa-solid fa-spinner fa-spin text-2xl mb-3"></i>
+                  <p class="text-sm">Yükleniyor...</p>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
       </div>
@@ -763,6 +805,119 @@ Marmara Üniversitesi İletişim Fakültesi 3. sınıf öğrencisiyim. İletişi
         const activeBtn = document.getElementById(`tab-btn-${tabId}`);
         activeBtn.classList.remove('text-slate-500', 'border-transparent');
         activeBtn.classList.add('text-blue-600', 'border-blue-600');
+        if (tabId === 'basvurularim') loadApplications();
+        if (tabId === 'favorilerim') loadFavorites();
+      }
+
+      // ── BAŞVURULARIM ──────────────────────────────────────────────
+      const STATUS_MAP = {
+        pending:  { label:'Bekliyor',  cls:'bg-amber-100 text-amber-700' },
+        accepted: { label:'Kabul',     cls:'bg-green-100 text-green-700' },
+        rejected: { label:'Reddedildi',cls:'bg-red-100 text-red-600' },
+        completed:{ label:'Tamamlandı',cls:'bg-blue-100 text-blue-700' },
+      };
+
+      async function loadApplications() {
+        const el = document.getElementById('app-list');
+        try {
+          const apps = await apiGet('/api/auth/applications');
+          document.getElementById('app-count').textContent = apps.length + ' başvuru';
+          if (apps.length === 0) {
+            el.innerHTML = `<div class="text-center py-12">
+              <i class="fa-solid fa-file-circle-xmark text-3xl text-slate-300 mb-3"></i>
+              <p class="text-slate-400 text-sm font-medium">Henüz başvurun yok.</p>
+              <a href="index.html" class="mt-3 inline-block text-sm font-bold text-blue-600 hover:underline">İlanları Keşfet →</a>
+            </div>`;
+            return;
+          }
+          el.innerHTML = apps.map(a => {
+            const s = STATUS_MAP[a.status] || STATUS_MAP.pending;
+            const months = ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
+            const d = new Date(a.applied_at);
+            const dateStr = `${d.getDate()} ${months[d.getMonth()]}`;
+            return `
+            <div class="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl hover:bg-white border border-transparent hover:border-slate-100 hover:shadow-sm transition group" id="app-${a.id}">
+              <div class="w-11 h-11 rounded-xl bg-white border border-slate-200 flex items-center justify-center shrink-0 overflow-hidden">
+                ${a.employer_avatar
+                  ? `<img src="${a.employer_avatar}" class="w-full h-full object-cover" />`
+                  : `<i class="fa-solid fa-building text-slate-400"></i>`}
+              </div>
+              <div class="flex-1 min-w-0">
+                <a href="is-detay.html?id=${a.job_id}" class="font-extrabold text-slate-900 text-sm hover:text-blue-600 transition truncate block">${escapeHtml(a.title)}</a>
+                <p class="text-xs text-slate-500 font-medium truncate">${escapeHtml(a.employer_name)} · ${escapeHtml(a.city||'')} ${escapeHtml(a.district||'')} · ${dateStr}</p>
+              </div>
+              <span class="text-[11px] font-bold px-2.5 py-1 rounded-full shrink-0 ${s.cls}">${s.label}</span>
+              <button onclick="deleteApplication(${a.id})"
+                class="opacity-0 group-hover:opacity-100 w-8 h-8 rounded-xl bg-white border border-slate-200 text-slate-400 hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition flex items-center justify-center shrink-0">
+                <i class="fa-solid fa-trash text-xs"></i>
+              </button>
+            </div>`;
+          }).join('');
+        } catch (err) {
+          el.innerHTML = `<div class="text-center py-8 text-red-400 text-sm">${escapeHtml(err.message)}</div>`;
+        }
+      }
+
+      async function deleteApplication(id) {
+        if (!confirm('Bu başvuruyu silmek istediğinize emin misiniz?')) return;
+        try {
+          await apiDelete('/api/auth/applications/' + id);
+          document.getElementById('app-' + id)?.remove();
+          showToast('Başvuru silindi');
+          const remaining = document.querySelectorAll('[id^="app-"]').length;
+          document.getElementById('app-count').textContent = remaining + ' başvuru';
+        } catch (err) { showToast(err.message, 'error'); }
+      }
+
+      // ── FAVORİLERİM ──────────────────────────────────────────────
+      async function loadFavorites() {
+        const el = document.getElementById('fav-list');
+        try {
+          const favs = await apiGet('/api/auth/bookmarks');
+          document.getElementById('fav-count').textContent = favs.length + ' ilan';
+          if (favs.length === 0) {
+            el.innerHTML = `<div class="text-center py-12">
+              <i class="fa-regular fa-bookmark text-3xl text-slate-300 mb-3"></i>
+              <p class="text-slate-400 text-sm font-medium">Kaydedilen ilan yok.</p>
+              <a href="index.html" class="mt-3 inline-block text-sm font-bold text-blue-600 hover:underline">İlanları Keşfet →</a>
+            </div>`;
+            return;
+          }
+          el.innerHTML = favs.map(j => {
+            const months = ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
+            const d = new Date(j.work_date);
+            const dateStr = `${d.getDate()} ${months[d.getMonth()]}`;
+            return `
+            <div class="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl hover:bg-white border border-transparent hover:border-slate-100 hover:shadow-sm transition group" id="fav-${j.id}">
+              <div class="w-11 h-11 rounded-xl bg-white border border-slate-200 flex items-center justify-center shrink-0 overflow-hidden">
+                ${j.employer_avatar
+                  ? `<img src="${j.employer_avatar}" class="w-full h-full object-cover" />`
+                  : `<i class="fa-solid fa-briefcase text-slate-400"></i>`}
+              </div>
+              <div class="flex-1 min-w-0">
+                <a href="is-detay.html?id=${j.id}" class="font-extrabold text-slate-900 text-sm hover:text-blue-600 transition truncate block">${escapeHtml(j.title)}</a>
+                <p class="text-xs text-slate-500 font-medium truncate">${escapeHtml(j.employer_name)} · ${escapeHtml(j.city||'')} ${escapeHtml(j.district||'')} · ${dateStr}</p>
+              </div>
+              <span class="font-black text-slate-900 text-sm shrink-0">${new Intl.NumberFormat('tr-TR').format(j.budget)} ₺</span>
+              <button onclick="removeFavorite(${j.id})"
+                class="opacity-0 group-hover:opacity-100 w-8 h-8 rounded-xl bg-white border border-slate-200 text-slate-400 hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition flex items-center justify-center shrink-0">
+                <i class="fa-solid fa-bookmark-slash text-xs"></i>
+              </button>
+            </div>`;
+          }).join('');
+        } catch (err) {
+          el.innerHTML = `<div class="text-center py-8 text-red-400 text-sm">${escapeHtml(err.message)}</div>`;
+        }
+      }
+
+      async function removeFavorite(jobId) {
+        try {
+          await apiDelete('/api/auth/bookmarks/' + jobId);
+          document.getElementById('fav-' + jobId)?.remove();
+          showToast('Favorilerden kaldırıldı');
+          const remaining = document.querySelectorAll('[id^="fav-"]').length;
+          document.getElementById('fav-count').textContent = remaining + ' ilan';
+        } catch (err) { showToast(err.message, 'error'); }
       }
 
       // 2. Profil verisini yükle
@@ -949,6 +1104,12 @@ Marmara Üniversitesi İletişim Fakültesi 3. sınıf öğrencisiyim. İletişi
       window.addEventListener('DOMContentLoaded', () => {
         loadProfile();
         loadNotifBadge();
+        loadHeaderUser();
+        // URL hash ile direkt tab açma: profil.html#basvurularim
+        const hash = location.hash.replace('#','');
+        if (hash === 'basvurularim' || hash === 'favorilerim') {
+          switchTab(hash);
+        }
       });
 
       // ============== BİLDİRİMLER ==============
