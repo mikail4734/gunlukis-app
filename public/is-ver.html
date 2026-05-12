@@ -1,0 +1,493 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Günlükİş | Yeni İş İlanı Ver</title>
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: { sans: ["Plus Jakarta Sans", "sans-serif"] },
+            colors: { brand: "#2563eb" },
+          },
+        },
+      };
+    </script>
+
+    <style>
+      body {
+        background-color: #f8fafc;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .glass-nav {
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+      }
+
+      /* Animasyonlar ve Gölgeler */
+      .smooth-shadow {
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+      }
+
+      /* Özel Input Stilleri */
+      input[type="date"]::-webkit-calendar-picker-indicator,
+      input[type="time"]::-webkit-calendar-picker-indicator {
+        cursor: pointer;
+        opacity: 0.6;
+        transition: 0.2s;
+      }
+      input[type="date"]::-webkit-calendar-picker-indicator:hover,
+      input[type="time"]::-webkit-calendar-picker-indicator:hover {
+        opacity: 1;
+      }
+
+      /* Toast */
+      #toast-container {
+        position: fixed;
+        bottom: 80px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        pointer-events: none;
+      }
+      .toast {
+        background: #1e293b;
+        color: white;
+        padding: 12px 24px;
+        border-radius: 100px;
+        font-size: 14px;
+        font-weight: 600;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        opacity: 0;
+        transform: translateY(20px);
+        transition: all 0.3s ease;
+      }
+      .toast.show {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      /* Loading Spinner */
+      .loader {
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        border-top: 3px solid white;
+        width: 20px;
+        height: 20px;
+        animation: spin 1s linear infinite;
+        display: none;
+      }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+  <body class="text-slate-800 antialiased selection:bg-blue-200 pb-20 md:pb-0">
+    <header class="fixed top-0 left-0 right-0 z-50 glass-nav">
+      <div class="max-w-7xl mx-auto px-4 lg:px-8">
+        <div class="flex items-center justify-between h-16 md:h-20">
+          <a href="#" class="flex items-center gap-3">
+            <div
+              class="bg-blue-600 p-2.5 rounded-xl shadow-lg shadow-blue-500/30"
+            >
+              <i class="fa-solid fa-briefcase text-white text-sm"></i>
+            </div>
+            <span class="text-xl font-extrabold tracking-tight text-slate-900"
+              >Günlükİş</span
+            >
+          </a>
+
+          <div class="hidden md:flex items-center gap-4">
+            <button
+              class="text-sm font-bold bg-blue-600 text-white px-6 py-2.5 rounded-full shadow-md shadow-blue-500/20 cursor-default"
+            >
+              İş Ver (Aktif)
+            </button>
+            <div class="w-px h-6 bg-slate-200 mx-2"></div>
+            <button
+              class="relative p-2 text-slate-500 hover:text-slate-900 transition"
+            >
+              <i class="fa-regular fa-bell text-xl"></i>
+            </button>
+            <div class="relative group cursor-pointer ml-2 py-4">
+              <div class="flex items-center gap-2">
+                <img
+                  src="https://i.pravatar.cc/150?img=32"
+                  alt="Profil"
+                  class="w-10 h-10 rounded-full object-cover border-2 border-slate-100"
+                />
+                <i
+                  class="fa-solid fa-chevron-down text-slate-400 text-[10px]"
+                ></i>
+              </div>
+            </div>
+          </div>
+
+          <div class="md:hidden flex items-center gap-4">
+            <button class="relative text-slate-500">
+              <i class="fa-regular fa-bell text-xl"></i>
+            </button>
+            <img
+              src="https://i.pravatar.cc/150?img=32"
+              alt="Profil"
+              class="w-9 h-9 rounded-full object-cover border border-slate-200"
+            />
+          </div>
+        </div>
+
+        <nav
+          class="hidden md:flex items-center justify-center gap-10 h-14 text-sm font-bold text-slate-500 border-t border-slate-200/60"
+        >
+          <a
+            href="#"
+            class="flex items-center gap-2 hover:text-slate-800 transition h-full"
+            ><i class="fa-solid fa-layer-group"></i> İşler</a
+          >
+          <a
+            href="#"
+            class="flex items-center gap-2 hover:text-slate-800 transition h-full"
+            ><i class="fa-regular fa-calendar"></i> Takvim</a
+          >
+          <a
+            href="#"
+            class="flex items-center gap-2 hover:text-slate-800 transition h-full"
+            ><i class="fa-regular fa-message"></i> Mesajlar</a
+          >
+          <a
+            href="#"
+            class="flex items-center gap-2 hover:text-slate-800 transition h-full"
+            ><i class="fa-regular fa-user"></i> Profil</a
+          >
+        </nav>
+      </div>
+    </header>
+
+    <main
+      class="pt-[80px] md:pt-[150px] px-4 lg:px-8 max-w-3xl mx-auto min-h-screen pb-16"
+    >
+      <div class="text-center mb-10">
+        <div
+          class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-2xl mx-auto mb-4 shadow-sm"
+        >
+          <i class="fa-solid fa-wand-magic-sparkles"></i>
+        </div>
+        <h1
+          class="text-3xl md:text-4xl font-extrabold text-slate-900 mb-3 tracking-tight"
+        >
+          Hızlıca İş İlanı Oluştur
+        </h1>
+        <p class="text-[15px] font-medium text-slate-500">
+          Bahçe işi, eşya taşıma veya ufak tamiratlar... İhtiyacını yaz, uygun
+          kişileri anında bulalım.
+        </p>
+      </div>
+
+      <form
+        id="post-job-form"
+        onsubmit="submitJob(event)"
+        class="space-y-6 md:space-y-8"
+      >
+        <div
+          class="bg-white border border-slate-100 rounded-[2rem] p-6 md:p-8 smooth-shadow"
+        >
+          <div
+            class="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100"
+          >
+            <div
+              class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-black"
+            >
+              1
+            </div>
+            <h2 class="text-lg font-extrabold text-slate-900">İşin Tanımı</h2>
+          </div>
+
+          <div class="space-y-5">
+            <div>
+              <label
+                class="block text-xs font-bold text-slate-400 uppercase mb-2"
+                >Ne Yapılacak? (Başlık)</label
+              >
+              <input
+                type="text"
+                id="input-title"
+                required
+                placeholder="Örn: Ev taşımaya yardım edilecek, Bahçe çimleri biçilecek..."
+                class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-[15px] font-bold text-slate-800 focus:border-blue-500 focus:bg-white outline-none transition placeholder:font-medium placeholder:text-slate-400"
+              />
+            </div>
+
+            <div>
+              <label
+                class="block text-xs font-bold text-slate-400 uppercase mb-2"
+                >Kategori</label
+              >
+              <div class="relative">
+                <select
+                  id="input-category"
+                  required
+                  class="w-full pl-4 pr-10 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-[15px] font-bold text-slate-800 focus:border-blue-500 focus:bg-white outline-none transition appearance-none cursor-pointer"
+                >
+                  <option value="" disabled selected>Bir kategori seçin</option>
+                </select>
+                <i
+                  class="fa-solid fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+                ></i>
+              </div>
+            </div>
+
+            <div>
+              <label
+                class="block text-xs font-bold text-slate-400 uppercase mb-2"
+                >İşin Detayları</label
+              >
+              <textarea
+                id="input-description"
+                required
+                rows="4"
+                placeholder="İşin kapsamını, varsa getirilmesi gereken malzemeleri veya özel şartları belirtin..."
+                class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-[15px] font-medium text-slate-800 focus:border-blue-500 focus:bg-white outline-none transition resize-none"
+              ></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="bg-white border border-slate-100 rounded-[2rem] p-6 md:p-8 smooth-shadow"
+        >
+          <div
+            class="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100"
+          >
+            <div
+              class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-black"
+            >
+              2
+            </div>
+            <h2 class="text-lg font-extrabold text-slate-900">
+              Zaman ve Konum
+            </h2>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+            <div>
+              <label
+                class="block text-xs font-bold text-slate-400 uppercase mb-2"
+                >Tarih</label
+              >
+              <input
+                type="date"
+                id="input-date"
+                required
+                class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-[15px] font-bold text-slate-800 focus:border-emerald-500 focus:bg-white outline-none transition cursor-pointer"
+              />
+            </div>
+            <div>
+              <label
+                class="block text-xs font-bold text-slate-400 uppercase mb-2"
+                >Saat (Tahmini Başlangıç)</label
+              >
+              <input
+                type="time"
+                id="input-time"
+                required
+                class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-[15px] font-bold text-slate-800 focus:border-emerald-500 focus:bg-white outline-none transition cursor-pointer"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-400 uppercase mb-2"
+              >Konum (Şehir, İlçe veya Mahalle)</label
+            >
+            <div class="relative">
+              <i
+                class="fa-solid fa-location-dot absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+              ></i>
+              <input
+                type="text"
+                id="input-location"
+                required
+                placeholder="Örn: Kadıköy, Moda"
+                class="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-[15px] font-bold text-slate-800 focus:border-emerald-500 focus:bg-white outline-none transition placeholder:font-medium placeholder:text-slate-400"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="bg-white border border-slate-100 rounded-[2rem] p-6 md:p-8 smooth-shadow"
+        >
+          <div
+            class="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100"
+          >
+            <div
+              class="w-8 h-8 rounded-lg bg-amber-50 text-amber-500 flex items-center justify-center font-black"
+            >
+              3
+            </div>
+            <h2 class="text-lg font-extrabold text-slate-900">Bütçe</h2>
+          </div>
+
+          <div class="mb-8">
+            <label class="block text-xs font-bold text-slate-400 uppercase mb-2"
+              >Bu iş için düşündüğünüz ücret (Toplam)</label
+            >
+            <div class="relative max-w-sm">
+              <input
+                type="number"
+                id="input-budget"
+                min="100"
+                step="50"
+                required
+                placeholder="Örn: 800"
+                class="w-full pl-6 pr-12 py-4 bg-slate-50 border border-slate-200 rounded-xl text-2xl font-black text-slate-900 focus:border-amber-500 focus:bg-white outline-none transition placeholder:font-medium placeholder:text-slate-300"
+              />
+              <span
+                class="absolute right-5 top-1/2 -translate-y-1/2 text-xl font-bold text-slate-400"
+                >₺</span
+              >
+            </div>
+            <p class="text-xs font-semibold text-amber-600 mt-2">
+              <i class="fa-solid fa-circle-info mr-1"></i> Sistem kesintisi
+              uygulanmadan önceki tutardır.
+            </p>
+          </div>
+
+          <button
+            type="submit"
+            id="submit-btn"
+            class="w-full bg-slate-900 text-white font-bold py-4 rounded-xl text-[15px] hover:bg-blue-600 transition-colors shadow-lg shadow-slate-900/20 flex items-center justify-center gap-2"
+          >
+            <span id="btn-text">İlanı Yayınla</span>
+            <div id="btn-loader" class="loader"></div>
+          </button>
+          <p class="text-xs font-medium text-slate-400 text-center mt-4">
+            İlan yayınlandıktan sonra uygun adaylar size mesaj atabilecektir.
+          </p>
+        </div>
+      </form>
+    </main>
+
+    <nav
+      class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around items-center h-16 pb-safe z-40"
+    >
+      <a href="#" class="flex flex-col items-center gap-1 text-slate-400 w-1/5"
+        ><i class="fa-solid fa-house text-lg"></i
+        ><span class="text-[10px] font-bold">Ana Sayfa</span></a
+      >
+      <a href="#" class="flex flex-col items-center gap-1 text-slate-400 w-1/5"
+        ><i class="fa-solid fa-magnifying-glass text-lg"></i
+        ><span class="text-[10px] font-bold">Keşfet</span></a
+      >
+      <a
+        href="#"
+        class="flex flex-col items-center justify-center w-1/5 relative -top-3"
+      >
+        <div
+          class="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white shadow-lg shadow-blue-500/30 border-4 border-white"
+        >
+          <i class="fa-solid fa-plus text-xl"></i>
+        </div>
+      </a>
+      <a href="#" class="flex flex-col items-center gap-1 text-slate-400 w-1/5"
+        ><i class="fa-solid fa-message text-lg"></i
+        ><span class="text-[10px] font-bold">Mesajlar</span></a
+      >
+      <a href="#" class="flex flex-col items-center gap-1 text-slate-400 w-1/5"
+        ><i class="fa-regular fa-user text-lg"></i
+        ><span class="text-[10px] font-bold">Profil</span></a
+      >
+    </nav>
+
+    <div id="toast-container"></div>
+
+    <script src="/js/api.js"></script>
+    <script>
+      // Kategorileri yükle
+      async function loadCategories() {
+        try {
+          const cats = await apiGet('/api/jobs/meta/categories');
+          const select = document.getElementById('input-category');
+          cats.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.id;
+            opt.textContent = c.name;
+            select.appendChild(opt);
+          });
+        } catch (err) {
+          showToast('Kategoriler yüklenemedi: ' + err.message, 'error');
+        }
+      }
+
+      // İlan oluştur (gerçek API)
+      async function submitJob(event) {
+        event.preventDefault();
+        const btnText = document.getElementById('btn-text');
+        const btnLoader = document.getElementById('btn-loader');
+        const submitBtn = document.getElementById('submit-btn');
+
+        btnText.innerText = 'Yayınlanıyor...';
+        btnLoader.style.display = 'block';
+        submitBtn.disabled = true;
+        submitBtn.classList.add('opacity-80', 'cursor-not-allowed');
+
+        // Konum: "Kadıköy, İstanbul" -> district, city
+        const locParts = document.getElementById('input-location').value.split(',').map(s => s.trim());
+        const district = locParts[0] || '';
+        const city = locParts[1] || locParts[0] || 'İstanbul';
+
+        const payload = {
+          title:        document.getElementById('input-title').value,
+          category_id:  document.getElementById('input-category').value,
+          description:  document.getElementById('input-description').value,
+          work_date:    document.getElementById('input-date').value,
+          start_time:   document.getElementById('input-time').value,
+          city,
+          district,
+          budget:       document.getElementById('input-budget').value,
+          job_type:     'daily',
+          work_type:    'full_time'
+        };
+
+        try {
+          const res = await apiPost('/api/jobs', payload);
+          btnText.innerText = 'İlanı Yayınla';
+          btnLoader.style.display = 'none';
+          submitBtn.disabled = false;
+          submitBtn.classList.remove('opacity-80', 'cursor-not-allowed');
+          document.getElementById('post-job-form').reset();
+          showToast('Harika! İş ilanınız başarıyla yayınlandı. 🎉');
+          setTimeout(() => { window.location = 'is-detay.html?id=' + res.id; }, 1500);
+        } catch (err) {
+          btnText.innerText = 'İlanı Yayınla';
+          btnLoader.style.display = 'none';
+          submitBtn.disabled = false;
+          submitBtn.classList.remove('opacity-80', 'cursor-not-allowed');
+          showToast('Hata: ' + err.message, 'error');
+        }
+      }
+
+      window.addEventListener('DOMContentLoaded', loadCategories);
+    </script>
+  </body>
+</html>

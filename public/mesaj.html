@@ -1,0 +1,1372 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Günlükİş | Mesajlar</title>
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: { sans: ["Plus Jakarta Sans", "sans-serif"] },
+            colors: {
+              brand: "#2563eb",
+            },
+          },
+        },
+      };
+    </script>
+
+    <style>
+      body {
+        background-color: #f8fafc;
+        -webkit-tap-highlight-color: transparent;
+        overflow: hidden; /* Sayfa kaymasını engelle, sadece chat kaysın */
+      }
+      .glass-nav {
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+      }
+
+      /* Bildirim paneli */
+      .notif-dropdown {
+        position: absolute;
+        top: 55px;
+        right: 0;
+        width: 380px;
+        max-width: 90vw;
+        max-height: 70vh;
+        background: white;
+        border-radius: 1.25rem;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+        border: 1px solid #e2e8f0;
+        z-index: 60;
+        display: none;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .notif-dropdown.open { display: flex; }
+
+      /* İnce Scrollbar (Chat İçin) */
+      .chat-scroll::-webkit-scrollbar {
+        width: 6px;
+      }
+      .chat-scroll::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .chat-scroll::-webkit-scrollbar-thumb {
+        background-color: #cbd5e1;
+        border-radius: 10px;
+      }
+      .chat-scroll::-webkit-scrollbar-thumb:hover {
+        background-color: #94a3b8;
+      }
+
+      /* Animasyonlar */
+      .message-enter {
+        animation: slideInUp 0.3s ease forwards;
+      }
+      @keyframes slideInUp {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    </style>
+  </head>
+  <body class="text-slate-800 antialiased selection:bg-blue-200">
+    <header class="fixed top-0 left-0 right-0 z-50 glass-nav">
+      <div class="max-w-7xl mx-auto px-4 lg:px-8">
+        <div class="flex items-center justify-between h-16 md:h-20">
+          <a href="index.html" class="flex items-center gap-3">
+            <div
+              class="bg-blue-600 p-2.5 rounded-xl shadow-lg shadow-blue-500/30"
+            >
+              <i class="fa-solid fa-briefcase text-white text-sm"></i>
+            </div>
+            <span class="text-xl font-extrabold tracking-tight text-slate-900"
+              >Günlükİş</span
+            >
+          </a>
+
+          <div class="hidden md:flex items-center gap-4">
+            <button
+              class="text-sm font-bold bg-slate-900 text-white px-6 py-2.5 rounded-full hover:bg-slate-800 transition shadow-md"
+            >
+              İş Ver
+            </button>
+            <div class="w-px h-6 bg-slate-200 mx-2"></div>
+            <div class="relative">
+              <button onclick="toggleNotifications(event)" id="notif-bell-btn"
+                class="relative p-2 text-slate-500 hover:text-slate-900 transition">
+                <i class="fa-regular fa-bell text-xl"></i>
+                <span id="notif-badge" class="hidden absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 border-2 border-white rounded-full"></span>
+              </button>
+              <div id="notif-dropdown" class="notif-dropdown"></div>
+            </div>
+            <div class="relative group cursor-pointer ml-2 py-4">
+              <div class="flex items-center gap-2">
+                <img src="https://i.pravatar.cc/150?img=32" alt="Profil"
+                  class="w-10 h-10 rounded-full object-cover border-2 border-slate-100 hover:border-blue-200 transition-colors" />
+                <i class="fa-solid fa-chevron-down text-slate-400 text-[10px] transition-transform duration-300 group-hover:rotate-180"></i>
+              </div>
+              <div class="absolute right-0 top-full mt-[-5px] w-60 bg-white border border-slate-100 rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 py-2 z-50">
+                <a href="profil.html" class="block px-5 py-3 text-[15px] font-bold text-slate-800 hover:bg-slate-50 hover:text-blue-600 transition">Üye profiline git</a>
+                <div class="h-px bg-slate-100 my-1"></div>
+                <a href="#" class="block px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition">Başvurularım</a>
+                <a href="#" class="block px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition">Favori İlanlarım</a>
+                <a href="#" class="block px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition">Özgeçmişler</a>
+                <a href="#" class="block px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition">İş Tercihleri</a>
+                <div class="h-px bg-slate-100 my-1"></div>
+                <a href="#" class="block px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition">Ayarlar</a>
+                <a href="#" class="block px-5 py-2.5 text-sm font-bold text-red-500 hover:bg-red-50 transition">Çıkış</a>
+              </div>
+            </div>
+          </div>
+
+          <div class="md:hidden flex items-center gap-4">
+            <button onclick="toggleNotifications(event)" class="relative text-slate-500">
+              <i class="fa-regular fa-bell text-xl"></i>
+              <span id="notif-badge-mobile" class="hidden absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 border-2 border-white rounded-full"></span>
+            </button>
+            <a href="profil.html"><img
+              src="https://i.pravatar.cc/150?img=32"
+              alt="Profil"
+              class="w-9 h-9 rounded-full object-cover border border-slate-200"
+            /></a>
+          </div>
+        </div>
+
+        <nav
+          class="hidden md:flex items-center justify-center gap-10 h-14 text-sm font-bold text-slate-500 border-t border-slate-200/60"
+        >
+          <a
+            href="is-detay.html"
+            class="flex items-center gap-2 hover:text-slate-800 transition h-full"
+            ><i class="fa-solid fa-layer-group"></i> İşler</a
+          >
+          <a
+            href="takvim.html"
+            class="flex items-center gap-2 hover:text-slate-800 transition h-full"
+            ><i class="fa-regular fa-calendar"></i> Takvim</a
+          >
+          <a
+            href="mesaj.html"
+            class="flex items-center gap-2 text-blue-600 border-b-2 border-blue-600 h-full"
+            ><i class="fa-regular fa-message"></i> Mesajlar</a
+          >
+          <a
+            href="anket.html"
+            class="flex items-center gap-2 hover:text-slate-800 transition h-full"
+            ><i class="fa-solid fa-chart-simple"></i> Anket</a
+          >
+        </nav>
+      </div>
+    </header>
+
+    <main
+      class="pt-[72px] md:pt-[136px] px-0 md:px-4 lg:px-8 max-w-7xl mx-auto h-[100dvh] md:h-[calc(100vh-20px)] flex flex-col pb-16 md:pb-0"
+    >
+      <div
+        class="flex-1 bg-white md:rounded-[2rem] border-0 md:border border-slate-200 shadow-sm flex overflow-hidden w-full h-full"
+      >
+        <aside
+          id="chat-sidebar"
+          class="w-full md:w-[320px] lg:w-[380px] border-r border-slate-100 flex flex-col bg-white transition-all duration-300 z-10"
+        >
+          <div class="p-4 border-b border-slate-100">
+            <div class="flex items-center justify-between mb-4">
+              <h1 class="text-2xl font-extrabold text-slate-900">Mesajlar</h1>
+              <button
+                onclick="openNewGroupModal()"
+                title="Yeni grup oluştur"
+                class="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition"
+              >
+                <i class="fa-solid fa-user-plus"></i>
+              </button>
+            </div>
+
+            <div class="relative">
+              <i
+                class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+              ></i>
+              <input
+                type="text"
+                id="search-input"
+                oninput="onSearchInput()"
+                placeholder="Sohbet veya kişi ara..."
+                class="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-full text-sm font-medium focus:bg-white focus:border-blue-300 outline-none transition-all placeholder:text-slate-400"
+              />
+            </div>
+          </div>
+
+          <div
+            class="flex-1 overflow-y-auto chat-scroll p-2"
+            id="chat-list-container"
+          ></div>
+        </aside>
+
+        <section
+          id="chat-area"
+          class="hidden md:flex flex-1 flex-col bg-[#f8fafc] relative w-full transition-all duration-300 absolute md:static inset-0 z-20"
+        >
+          <header
+            class="h-[72px] bg-white border-b border-slate-200 px-4 md:px-6 flex items-center justify-between shrink-0"
+          >
+            <div class="flex items-center gap-3">
+              <button
+                onclick="closeChatMobile()"
+                class="md:hidden mr-1 w-8 h-8 flex items-center justify-center text-slate-500 rounded-full hover:bg-slate-100"
+              >
+                <i class="fa-solid fa-arrow-left"></i>
+              </button>
+
+              <div class="relative">
+                <img
+                  id="active-chat-avatar"
+                  src=""
+                  alt="Avatar"
+                  class="w-11 h-11 rounded-full object-cover border border-slate-200"
+                />
+                <div
+                  id="active-chat-online-dot"
+                  class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full hidden"
+                ></div>
+              </div>
+              <div>
+                <h2
+                  id="active-chat-name"
+                  class="font-bold text-[15px] text-slate-900 leading-tight"
+                >
+                  ...
+                </h2>
+                <p
+                  id="active-chat-status"
+                  class="text-xs font-semibold text-slate-400"
+                >
+                  Çevrimiçi
+                </p>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-1 md:gap-3 text-slate-400">
+              <button
+                class="w-10 h-10 rounded-full hover:bg-slate-50 hover:text-blue-600 transition flex items-center justify-center"
+                title="Sesli arama"
+                onclick="showToast('Sesli arama özelliği yakında!', 'info')"
+              >
+                <i class="fa-solid fa-phone"></i>
+              </button>
+              <button
+                class="hidden sm:flex w-10 h-10 rounded-full hover:bg-slate-50 hover:text-blue-600 transition items-center justify-center"
+                title="Görüntülü arama"
+                onclick="showToast('Görüntülü arama özelliği yakında!', 'info')"
+              >
+                <i class="fa-solid fa-video"></i>
+              </button>
+
+              <!-- 3 NOKTA MENÜSÜ -->
+              <div class="relative">
+                <button
+                  onclick="toggleChatMenu(event)"
+                  class="w-10 h-10 rounded-full hover:bg-slate-50 hover:text-slate-800 transition flex items-center justify-center"
+                >
+                  <i class="fa-solid fa-ellipsis-vertical"></i>
+                </button>
+
+                <div
+                  id="chat-menu"
+                  class="hidden absolute right-0 top-12 w-56 bg-white border border-slate-200 rounded-2xl shadow-2xl z-30 overflow-hidden"
+                >
+                  <button
+                    onclick="openChatInfo()"
+                    class="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-3"
+                  >
+                    <i class="fa-solid fa-circle-info text-slate-400 w-4"></i>
+                    Sohbet Bilgisi
+                  </button>
+                  <button
+                    onclick="openNewGroupModalFromMenu()"
+                    class="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-3"
+                  >
+                    <i class="fa-solid fa-users text-slate-400 w-4"></i> Yeni
+                    Grup Oluştur
+                  </button>
+                  <button
+                    onclick="muteChat()"
+                    class="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-3"
+                  >
+                    <i class="fa-solid fa-bell-slash text-slate-400 w-4"></i>
+                    Sessize Al
+                  </button>
+                  <div class="border-t border-slate-100"></div>
+                  <button
+                    onclick="deleteChat()"
+                    class="w-full text-left px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 flex items-center gap-3"
+                  >
+                    <i class="fa-solid fa-trash w-4"></i>
+                    <span id="delete-chat-label">Sohbeti Sil</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </header>
+
+          <div
+            id="messages-container"
+            class="flex-1 overflow-y-auto chat-scroll p-4 md:p-6 flex flex-col gap-4"
+          ></div>
+
+          <footer
+            class="bg-white p-3 md:p-4 border-t border-slate-200 flex items-end gap-2 md:gap-3 shrink-0"
+          >
+            <!-- Gizli dosya inputları -->
+            <input
+              type="file"
+              id="file-input"
+              class="hidden"
+              onchange="handleFileSelected(this)"
+            />
+            <input
+              type="file"
+              id="image-input"
+              class="hidden"
+              accept="image/*"
+              onchange="handleFileSelected(this)"
+            />
+
+            <!-- Ataç butonu + popup menü -->
+            <div class="relative">
+              <button
+                onclick="toggleAttachMenu(event)"
+                class="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center text-slate-400 hover:text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-full transition shrink-0"
+                title="Dosya ekle"
+              >
+                <i class="fa-solid fa-paperclip text-lg"></i>
+              </button>
+
+              <div
+                id="attach-menu"
+                class="hidden absolute bottom-14 left-0 w-44 bg-white border border-slate-200 rounded-2xl shadow-2xl z-30 overflow-hidden"
+              >
+                <button
+                  onclick="
+                    document.getElementById('image-input').click();
+                    toggleAttachMenu();
+                  "
+                  class="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-3"
+                >
+                  <i class="fa-solid fa-image text-blue-500 w-4"></i> Fotoğraf
+                </button>
+                <button
+                  onclick="
+                    document.getElementById('file-input').click();
+                    toggleAttachMenu();
+                  "
+                  class="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-3"
+                >
+                  <i class="fa-solid fa-file text-emerald-500 w-4"></i> Dosya
+                </button>
+              </div>
+            </div>
+
+            <div
+              class="flex-1 bg-slate-50 border border-slate-100 rounded-[1.5rem] flex items-end px-4 py-1.5 focus-within:bg-white focus-within:border-blue-200 transition-all"
+            >
+              <textarea
+                id="message-input"
+                rows="1"
+                placeholder="Mesajınızı yazın..."
+                class="w-full bg-transparent outline-none resize-none max-h-32 text-[15px] font-medium text-slate-800 py-2 placeholder-slate-400 chat-scroll"
+                oninput="autoResize(this)"
+                onkeydown="checkEnter(event)"
+              ></textarea>
+              <button
+                class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-blue-600 mb-1 shrink-0"
+                onclick="showToast('Emoji seçici yakında!', 'info')"
+              >
+                <i class="fa-regular fa-face-smile text-xl"></i>
+              </button>
+            </div>
+
+            <button
+              onclick="sendMessage()"
+              class="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center bg-blue-600 text-white rounded-full hover:bg-blue-700 transition shadow-lg shadow-blue-500/30 shrink-0 transform hover:scale-105"
+            >
+              <i class="fa-solid fa-paper-plane mr-0.5"></i>
+            </button>
+          </footer>
+        </section>
+      </div>
+    </main>
+
+    <!-- ============================================================ -->
+    <!-- GRUP OLUŞTUR MODAL                                            -->
+    <!-- ============================================================ -->
+    <div
+      id="new-group-modal"
+      class="hidden fixed inset-0 z-[100] items-center justify-center bg-slate-900/50 backdrop-blur-sm"
+      style="display: none"
+    >
+      <div
+        class="bg-white rounded-[2rem] p-6 w-[90%] max-w-md max-h-[85vh] flex flex-col shadow-2xl"
+      >
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-xl font-extrabold text-slate-900">
+            Yeni Grup Oluştur
+          </h2>
+          <button
+            onclick="closeNewGroupModal()"
+            class="w-8 h-8 flex items-center justify-center bg-slate-100 text-slate-500 rounded-full hover:bg-slate-200"
+          >
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <label class="block text-xs font-bold text-slate-400 uppercase mb-2"
+          >Grup Adı</label
+        >
+        <input
+          type="text"
+          id="group-name-input"
+          placeholder="Örn: Hilton Etkinlik Ekibi"
+          class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 focus:border-blue-500 focus:bg-white outline-none transition mb-4"
+        />
+
+        <label class="block text-xs font-bold text-slate-400 uppercase mb-2"
+          >Üye Ekle</label
+        >
+        <div class="relative mb-3">
+          <i
+            class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm"
+          ></i>
+          <input
+            type="text"
+            id="member-search-input"
+            oninput="searchUsersForGroup()"
+            placeholder="İsme göre ara..."
+            class="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-full text-sm font-medium focus:bg-white focus:border-blue-300 outline-none transition"
+          />
+        </div>
+
+        <!-- Seçilen üyeler -->
+        <div
+          id="selected-members"
+          class="flex flex-wrap gap-2 mb-3 min-h-[2rem]"
+        ></div>
+
+        <!-- Arama sonuçları -->
+        <div
+          id="user-search-results"
+          class="flex-1 overflow-y-auto chat-scroll border border-slate-100 rounded-2xl min-h-[150px] max-h-[300px]"
+        >
+          <p class="text-xs text-slate-400 text-center py-8 font-medium">
+            Aramak için yukarıya yaz.
+          </p>
+        </div>
+
+        <div class="flex gap-3 mt-4">
+          <button
+            onclick="closeNewGroupModal()"
+            class="flex-1 py-3 bg-slate-100 text-slate-600 font-bold rounded-xl text-sm hover:bg-slate-200 transition"
+          >
+            İptal
+          </button>
+          <button
+            onclick="createGroup()"
+            id="create-group-btn"
+            class="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl text-sm hover:bg-blue-700 transition shadow-md shadow-blue-500/20"
+          >
+            Grup Oluştur
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- SOHBET BİLGİSİ MODAL                                          -->
+    <!-- ============================================================ -->
+    <div
+      id="chat-info-modal"
+      class="hidden fixed inset-0 z-[100] items-center justify-center bg-slate-900/50 backdrop-blur-sm"
+      style="display: none"
+    >
+      <div
+        class="bg-white rounded-[2rem] p-6 w-[90%] max-w-md max-h-[85vh] flex flex-col shadow-2xl"
+      >
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-xl font-extrabold text-slate-900">Sohbet Bilgisi</h2>
+          <button
+            onclick="closeChatInfo()"
+            class="w-8 h-8 flex items-center justify-center bg-slate-100 text-slate-500 rounded-full hover:bg-slate-200"
+          >
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <div class="flex flex-col items-center mb-6">
+          <img
+            id="info-avatar"
+            src=""
+            class="w-20 h-20 rounded-full object-cover border-4 border-white shadow-md mb-3"
+          />
+          <h3 id="info-name" class="text-lg font-extrabold text-slate-900"></h3>
+          <p id="info-subtitle" class="text-sm font-medium text-slate-500"></p>
+        </div>
+
+        <div>
+          <p class="text-xs font-bold text-slate-400 uppercase mb-3">Üyeler</p>
+          <div
+            id="info-members-list"
+            class="space-y-2 overflow-y-auto chat-scroll max-h-[300px]"
+          ></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOAST -->
+    <div
+      id="toast-container"
+      class="fixed top-20 right-4 z-[200] flex flex-col gap-2"
+    ></div>
+
+    <style>
+      .toast {
+        background: #1e293b;
+        color: white;
+        padding: 12px 20px;
+        border-radius: 12px;
+        font-size: 14px;
+        font-weight: 500;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+        opacity: 0;
+        transform: translateX(20px);
+        transition: all 0.3s;
+      }
+      .toast.show {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    </style>
+
+    <nav
+      class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around items-center h-16 pb-safe z-40"
+    >
+      <a href="index.html" class="flex flex-col items-center gap-1 text-slate-400 w-1/4"
+        ><i class="fa-solid fa-house text-lg"></i
+        ><span class="text-[10px] font-bold">Ana Sayfa</span></a
+      >
+      <a href="#" class="flex flex-col items-center gap-1 text-slate-400 w-1/4"
+        ><i class="fa-solid fa-magnifying-glass text-lg"></i
+        ><span class="text-[10px] font-bold">Keşfet</span></a
+      >
+      <a
+        href="mesaj.html"
+        class="flex flex-col items-center gap-1 text-blue-600 w-1/4 relative"
+        ><i class="fa-solid fa-message text-lg"></i
+        ><span class="text-[10px] font-bold">Mesajlar</span
+        ><span
+          class="absolute top-0 right-4 w-2 h-2 bg-red-500 rounded-full"
+        ></span
+      ></a>
+      <a href="profil.html" class="flex flex-col items-center gap-1 text-slate-400 w-1/4"
+        ><i class="fa-regular fa-user text-lg"></i
+        ><span class="text-[10px] font-bold">Profil</span></a
+      >
+    </nav>
+
+    <script src="/js/api.js"></script>
+    <script>
+      // ============================================================
+      // MESAJLAŞMA — Backend API'ye bağlı (Tam Özellikli)
+      // Özellikler: arama, dosya/resim gönderme, 3 nokta menüsü,
+      // grup oluşturma, sohbet bilgisi, sohbet silme/ayrılma
+      // ============================================================
+      let chats = [];
+      let activeChatId = null;
+      let selectedMembers = []; // grup oluştururken seçilen kullanıcılar
+      let searchTimeout = null; // debounce için
+
+      window.addEventListener("DOMContentLoaded", async () => {
+        await loadConversations();
+        if (chats.length > 0) loadChat(chats[0].id);
+        loadNotifBadge();
+
+        // Sayfa herhangi yere tıklandığında dropdown menüleri kapat
+        document.addEventListener("click", (e) => {
+          if (
+            !e.target.closest("#chat-menu") &&
+            !e.target.closest('[onclick*="toggleChatMenu"]')
+          ) {
+            document.getElementById("chat-menu").classList.add("hidden");
+          }
+          if (
+            !e.target.closest("#attach-menu") &&
+            !e.target.closest('[onclick*="toggleAttachMenu"]')
+          ) {
+            document.getElementById("attach-menu").classList.add("hidden");
+          }
+        });
+      });
+
+      // ============== SOHBET LİSTESİ ==============
+      async function loadConversations(query = "") {
+        try {
+          const url = query
+            ? `/api/messages/conversations?q=${encodeURIComponent(query)}`
+            : "/api/messages/conversations";
+          chats = await apiGet(url);
+          renderChatList();
+        } catch (err) {
+          console.error("Sohbetler yüklenemedi:", err);
+        }
+      }
+
+      // ============== ARAMA ==============
+      function onSearchInput() {
+        const q = document.getElementById("search-input").value.trim();
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => loadConversations(q), 250);
+      }
+
+      // ============== SOHBET LİSTESİNİ ÇİZ ==============
+      function renderChatList() {
+        const container = document.getElementById("chat-list-container");
+        container.innerHTML = "";
+
+        if (chats.length === 0) {
+          container.innerHTML = `<p class="text-sm text-slate-400 text-center mt-8 font-medium">Sohbet bulunamadı.</p>`;
+          return;
+        }
+
+        chats.forEach((chat) => {
+          const isActive = chat.id === activeChatId;
+          const unread = chat.unread || 0;
+          const isGroup = chat.is_group == 1;
+
+          const unreadBadge =
+            unread > 0
+              ? `<div class="bg-blue-600 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full mt-1">${unread}</div>`
+              : "";
+
+          // Grup ikonu / kullanıcı avatarı
+          const avatarHtml = isGroup
+            ? `<div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white font-bold text-lg">
+                 <i class="fa-solid fa-users"></i>
+               </div>`
+            : `<img src="${chat.avatar || "https://i.pravatar.cc/150?u=" + chat.id}" class="w-12 h-12 rounded-full object-cover">`;
+
+          const onlineIndicator =
+            !isGroup && chat.online
+              ? `<div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>`
+              : "";
+
+          const timeShort = chat.time ? formatChatTime(chat.time) : "";
+          const groupBadge = isGroup
+            ? `<span class="text-[10px] font-bold text-slate-400">${chat.member_count} kişi</span>`
+            : "";
+
+          container.innerHTML += `
+            <div onclick="loadChat(${chat.id})" class="flex items-center gap-3 p-3 rounded-2xl cursor-pointer transition-all mb-1 ${isActive ? "bg-blue-50" : "hover:bg-slate-50"}">
+              <div class="relative shrink-0">
+                ${avatarHtml}
+                ${onlineIndicator}
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex justify-between items-baseline mb-0.5 gap-2">
+                  <h3 class="font-bold text-[14px] text-slate-900 truncate flex items-center gap-1.5">
+                    ${isGroup ? '<i class="fa-solid fa-users text-slate-400 text-xs"></i>' : ""}
+                    ${escapeHtml(chat.name || "")}
+                  </h3>
+                  <span class="text-[11px] font-bold ${unread > 0 ? "text-blue-600" : "text-slate-400"} shrink-0">${timeShort}</span>
+                </div>
+                <div class="flex justify-between items-center gap-2">
+                  <p class="text-[13px] font-medium truncate ${unread > 0 ? "text-slate-800 font-bold" : "text-slate-500"}">${escapeHtml(chat.last_message || "")}</p>
+                  ${unreadBadge || groupBadge}
+                </div>
+              </div>
+            </div>`;
+        });
+      }
+
+      // ============== SOHBET AÇ ==============
+      async function loadChat(id) {
+        activeChatId = id;
+        const chat = chats.find((c) => c.id === id);
+        if (!chat) return;
+
+        const isGroup = chat.is_group == 1;
+
+        // Header'ı güncelle
+        document.getElementById("active-chat-name").innerText = chat.name || "";
+        const avatarEl = document.getElementById("active-chat-avatar");
+        if (isGroup) {
+          avatarEl.src =
+            chat.avatar ||
+            "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCI+PHJlY3Qgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiBmaWxsPSIjMzc4MmY2IiByeD0iMjQiLz48dGV4dCB4PSI1MCUiIHk9IjU1JSIgZm9udC1zaXplPSIyMCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPvCfkaXwn5GlPC90ZXh0Pjwvc3ZnPg==";
+        } else {
+          avatarEl.src =
+            chat.avatar || "https://i.pravatar.cc/150?u=" + chat.id;
+        }
+
+        // Çevrimiçi durumu
+        const onlineDot = document.getElementById("active-chat-online-dot");
+        const statusText = document.getElementById("active-chat-status");
+        if (isGroup) {
+          onlineDot.classList.add("hidden");
+          statusText.textContent = `${chat.member_count} üye`;
+        } else if (chat.online) {
+          onlineDot.classList.remove("hidden");
+          statusText.textContent = "Çevrimiçi";
+        } else {
+          onlineDot.classList.add("hidden");
+          statusText.textContent = "Çevrimdışı";
+        }
+
+        // Sil/Ayrıl butonunun etiketini güncelle
+        document.getElementById("delete-chat-label").textContent = isGroup
+          ? "Gruptan Ayrıl"
+          : "Sohbeti Sil";
+
+        chat.unread = 0;
+        renderChatList();
+
+        // Mesajları çek
+        try {
+          const msgs = await apiGet(`/api/messages/conversations/${id}`);
+          const container = document.getElementById("messages-container");
+          container.innerHTML = "";
+          msgs.forEach((m) => appendMessageHTML(m, isGroup));
+          scrollToBottom();
+        } catch (err) {
+          console.error("Mesajlar yüklenemedi:", err);
+        }
+
+        if (window.innerWidth < 768) {
+          document.getElementById("chat-sidebar").classList.add("hidden");
+          document.getElementById("chat-area").classList.remove("hidden");
+          document.getElementById("chat-area").classList.add("flex");
+        }
+      }
+
+      // ============== MESAJ BALONU ÇİZ ==============
+      function appendMessageHTML(m, isGroup = false) {
+        const container = document.getElementById("messages-container");
+        const isMe = m.sender === "me";
+        const time = formatChatTime(m.sent_at);
+
+        const bubbleClass = isMe
+          ? "bg-blue-600 text-white rounded-2xl rounded-tr-sm"
+          : "bg-white border border-slate-200 text-slate-800 rounded-2xl rounded-tl-sm";
+        const alignClass = isMe ? "items-end" : "items-start";
+        const timeClass = isMe ? "text-blue-200" : "text-slate-400";
+
+        // Grupta gönderen adı (kendin değilsen)
+        const senderTag =
+          isGroup && !isMe && m.sender_name
+            ? `<p class="text-[11px] font-bold text-blue-600 mb-1">${escapeHtml(m.sender_name)}</p>`
+            : "";
+
+        // İçerik türüne göre balon
+        let content = "";
+        if (m.message_type === "image") {
+          content = `
+            <a href="${m.file_url}" target="_blank" class="block">
+              <img src="${m.file_url}" alt="Fotoğraf" class="max-w-full max-h-72 rounded-lg cursor-pointer hover:opacity-90 transition" />
+            </a>
+            ${m.content ? `<p class="text-[14px] leading-relaxed mt-2">${escapeHtml(m.content)}</p>` : ""}
+          `;
+        } else if (m.message_type === "file") {
+          content = `
+            <a href="${m.file_url}" target="_blank" download
+               class="flex items-center gap-3 p-3 -m-1 rounded-lg hover:bg-black/5 transition">
+              <div class="w-10 h-10 rounded-lg ${isMe ? "bg-white/20" : "bg-blue-50"} flex items-center justify-center shrink-0">
+                <i class="fa-solid fa-file ${isMe ? "text-white" : "text-blue-600"}"></i>
+              </div>
+              <div class="min-w-0">
+                <p class="text-[13px] font-bold truncate">${escapeHtml(m.file_name || "Dosya")}</p>
+                <p class="text-[11px] opacity-75">${formatFileSize(m.file_size)}</p>
+              </div>
+            </a>
+          `;
+        } else {
+          content = `<p class="text-[14px] leading-relaxed whitespace-pre-wrap break-words">${escapeHtml(m.content || "")}</p>`;
+        }
+
+        container.innerHTML += `
+          <div class="flex flex-col ${alignClass} message-enter w-full">
+            <div class="${bubbleClass} px-4 py-2.5 max-w-[85%] md:max-w-[70%] shadow-sm relative group">
+              ${senderTag}
+              ${content}
+              <span class="text-[10px] font-semibold ${timeClass} mt-1 block text-right">${time}${isMe ? ' <i class="fa-solid fa-check-double ml-1"></i>' : ""}</span>
+            </div>
+          </div>`;
+      }
+
+      // ============== METİN MESAJI GÖNDER ==============
+      async function sendMessage() {
+        if (!activeChatId) return;
+        const input = document.getElementById("message-input");
+        const text = input.value.trim();
+        if (!text) return;
+
+        const now = new Date().toISOString();
+        appendMessageHTML(
+          { content: text, message_type: "text", sender: "me", sent_at: now },
+          (chats.find((c) => c.id === activeChatId) || {}).is_group == 1,
+        );
+        input.value = "";
+        input.style.height = "auto";
+        scrollToBottom();
+
+        try {
+          await apiPost(
+            `/api/messages/conversations/${activeChatId}/messages`,
+            { content: text },
+          );
+          const chat = chats.find((c) => c.id === activeChatId);
+          if (chat) {
+            chat.last_message = text;
+            chat.time = now;
+            renderChatList();
+          }
+        } catch (err) {
+          showToast("Mesaj gönderilemedi: " + err.message, "error");
+        }
+      }
+
+      // ============== DOSYA / RESİM GÖNDER ==============
+      async function handleFileSelected(input) {
+        if (!input.files || input.files.length === 0) return;
+        const file = input.files[0];
+        input.value = ""; // sıfırla
+
+        if (!activeChatId) {
+          showToast("Önce bir sohbet seç.", "error");
+          return;
+        }
+        if (file.size > 10 * 1024 * 1024) {
+          showToast("Dosya çok büyük (max 10 MB)", "error");
+          return;
+        }
+
+        // Önce loading mesajı göster
+        const container = document.getElementById("messages-container");
+        const loadingId = "loading-" + Date.now();
+        container.innerHTML += `
+          <div id="${loadingId}" class="flex justify-end w-full">
+            <div class="bg-blue-600 text-white rounded-2xl rounded-tr-sm px-4 py-3 flex items-center gap-3">
+              <div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              <span class="text-sm font-medium">${escapeHtml(file.name)} yükleniyor...</span>
+            </div>
+          </div>`;
+        scrollToBottom();
+
+        try {
+          const formData = new FormData();
+          formData.append("file", file);
+
+          const res = await fetch(
+            `/api/messages/conversations/${activeChatId}/upload`,
+            {
+              method: "POST",
+              credentials: "include",
+              body: formData,
+            },
+          );
+          if (!res.ok)
+            throw new Error((await res.json()).error || "Yükleme hatası");
+          const data = await res.json();
+
+          // Loading'i kaldır, gerçek balonu ekle
+          document.getElementById(loadingId).remove();
+          const isGroup =
+            (chats.find((c) => c.id === activeChatId) || {}).is_group == 1;
+          appendMessageHTML(
+            {
+              message_type: data.message_type,
+              file_url: data.file_url,
+              file_name: data.file_name,
+              file_size: data.file_size,
+              sender: "me",
+              sent_at: new Date().toISOString(),
+            },
+            isGroup,
+          );
+          scrollToBottom();
+
+          // Sohbet listesi
+          const chat = chats.find((c) => c.id === activeChatId);
+          if (chat) {
+            chat.last_message =
+              data.message_type === "image" ? "📷 Fotoğraf" : "📎 Dosya";
+            chat.time = new Date().toISOString();
+            renderChatList();
+          }
+          showToast("Gönderildi!");
+        } catch (err) {
+          document.getElementById(loadingId)?.remove();
+          showToast("Yükleme hatası: " + err.message, "error");
+        }
+      }
+
+      // ============== ATAÇ MENÜSÜ ==============
+      function toggleAttachMenu(e) {
+        if (e) e.stopPropagation();
+        document.getElementById("attach-menu").classList.toggle("hidden");
+      }
+
+      // ============== 3 NOKTA MENÜSÜ ==============
+      function toggleChatMenu(e) {
+        if (e) e.stopPropagation();
+        document.getElementById("chat-menu").classList.toggle("hidden");
+      }
+
+      // ============== SOHBET BİLGİSİ ==============
+      async function openChatInfo() {
+        document.getElementById("chat-menu").classList.add("hidden");
+        if (!activeChatId) return;
+
+        try {
+          const data = await apiGet(
+            `/api/messages/conversations/${activeChatId}/info`,
+          );
+          const c = data.conversation;
+          const isGroup = c.is_group == 1;
+
+          document.getElementById("info-name").textContent = isGroup
+            ? c.group_name
+            : data.members.find((m) => m.full_name)?.full_name || "";
+          document.getElementById("info-subtitle").textContent = isGroup
+            ? `${data.members.length} üye • Oluşturulma: ${formatTurkishDate(c.created_at)}`
+            : data.members.find((m) => m.title)?.title || "";
+
+          const avatarEl = document.getElementById("info-avatar");
+          if (isGroup) {
+            avatarEl.src =
+              c.group_avatar ||
+              "https://placehold.co/200/2563eb/white?text=" +
+                encodeURIComponent((c.group_name || "G").charAt(0));
+          } else {
+            const other = data.members.find((m) => true);
+            avatarEl.src = other?.avatar_url || "https://i.pravatar.cc/150";
+          }
+
+          const list = document.getElementById("info-members-list");
+          list.innerHTML = data.members
+            .map(
+              (m) => `
+            <div class="flex items-center gap-3 p-2.5 hover:bg-slate-50 rounded-xl">
+              <div class="relative">
+                <img src="${m.avatar_url || "https://i.pravatar.cc/150?u=" + m.id}" class="w-10 h-10 rounded-full object-cover">
+                ${m.is_online ? '<div class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full"></div>' : ""}
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="font-bold text-sm text-slate-900 truncate">${escapeHtml(m.full_name)}</p>
+                <p class="text-[11px] font-medium text-slate-500 truncate">${escapeHtml(m.title || (m.role === "admin" ? "Yönetici" : "Üye"))}</p>
+              </div>
+              ${m.role === "admin" ? '<span class="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded">ADMİN</span>' : ""}
+            </div>
+          `,
+            )
+            .join("");
+
+          document.getElementById("chat-info-modal").style.display = "flex";
+        } catch (err) {
+          showToast("Bilgi yüklenemedi: " + err.message, "error");
+        }
+      }
+      function closeChatInfo() {
+        document.getElementById("chat-info-modal").style.display = "none";
+      }
+
+      // ============== SOHBETİ SİL / GRUPTAN AYRIL ==============
+      async function deleteChat() {
+        document.getElementById("chat-menu").classList.add("hidden");
+        if (!activeChatId) return;
+        const chat = chats.find((c) => c.id === activeChatId);
+        if (!chat) return;
+        const isGroup = chat.is_group == 1;
+        const msg = isGroup
+          ? "Bu gruptan ayrılmak istediğine emin misin?"
+          : "Bu sohbeti silmek istediğine emin misin?";
+        if (!confirm(msg)) return;
+
+        try {
+          await apiDelete(`/api/messages/conversations/${activeChatId}`);
+          activeChatId = null;
+          document.getElementById("messages-container").innerHTML = "";
+          document.getElementById("active-chat-name").innerText = "...";
+          document.getElementById("active-chat-status").innerText = "";
+          await loadConversations();
+          if (chats.length > 0) loadChat(chats[0].id);
+          showToast(isGroup ? "Gruptan ayrıldın." : "Sohbet silindi.");
+        } catch (err) {
+          showToast("Hata: " + err.message, "error");
+        }
+      }
+
+      function muteChat() {
+        document.getElementById("chat-menu").classList.add("hidden");
+        showToast("Sessize alma özelliği yakında!", "info");
+      }
+
+      // ============== GRUP OLUŞTURMA ==============
+      function openNewGroupModal() {
+        selectedMembers = [];
+        document.getElementById("group-name-input").value = "";
+        document.getElementById("member-search-input").value = "";
+        document.getElementById("selected-members").innerHTML = "";
+        document.getElementById("user-search-results").innerHTML =
+          '<p class="text-xs text-slate-400 text-center py-8 font-medium">Aramak için yukarıya yaz.</p>';
+        document.getElementById("new-group-modal").style.display = "flex";
+      }
+      function openNewGroupModalFromMenu() {
+        document.getElementById("chat-menu").classList.add("hidden");
+        openNewGroupModal();
+      }
+      function closeNewGroupModal() {
+        document.getElementById("new-group-modal").style.display = "none";
+      }
+
+      async function searchUsersForGroup() {
+        const q = document.getElementById("member-search-input").value.trim();
+        const results = document.getElementById("user-search-results");
+
+        if (q.length < 1) {
+          results.innerHTML =
+            '<p class="text-xs text-slate-400 text-center py-8 font-medium">Aramak için yukarıya yaz.</p>';
+          return;
+        }
+
+        try {
+          const users = await apiGet(
+            `/api/messages/users/search?q=${encodeURIComponent(q)}`,
+          );
+          if (users.length === 0) {
+            results.innerHTML =
+              '<p class="text-xs text-slate-400 text-center py-8 font-medium">Kullanıcı bulunamadı.</p>';
+            return;
+          }
+
+          results.innerHTML = users
+            .map((u) => {
+              const isSelected = selectedMembers.some((m) => m.id === u.id);
+              return `
+              <div onclick="toggleMember(${u.id}, '${escapeAttr(u.full_name)}', '${escapeAttr(u.avatar_url || "")}')"
+                class="flex items-center gap-3 p-3 cursor-pointer transition border-b border-slate-100 last:border-b-0 ${isSelected ? "bg-blue-50" : "hover:bg-slate-50"}">
+                <img src="${u.avatar_url || "https://i.pravatar.cc/150?u=" + u.id}" class="w-10 h-10 rounded-full object-cover">
+                <div class="flex-1 min-w-0">
+                  <p class="font-bold text-sm text-slate-900 truncate">${escapeHtml(u.full_name)}</p>
+                  <p class="text-[11px] font-medium text-slate-500 truncate">${escapeHtml(u.title || "")}</p>
+                </div>
+                <div class="w-6 h-6 rounded-full border-2 ${isSelected ? "bg-blue-600 border-blue-600" : "border-slate-300"} flex items-center justify-center">
+                  ${isSelected ? '<i class="fa-solid fa-check text-white text-xs"></i>' : ""}
+                </div>
+              </div>
+            `;
+            })
+            .join("");
+        } catch (err) {
+          results.innerHTML = `<p class="text-xs text-red-500 text-center py-8 font-medium">Hata: ${err.message}</p>`;
+        }
+      }
+
+      function toggleMember(id, name, avatar) {
+        const idx = selectedMembers.findIndex((m) => m.id === id);
+        if (idx >= 0) {
+          selectedMembers.splice(idx, 1);
+        } else {
+          selectedMembers.push({ id, name, avatar });
+        }
+        renderSelectedMembers();
+        searchUsersForGroup(); // arama sonuçlarını da yenile
+      }
+
+      function renderSelectedMembers() {
+        const el = document.getElementById("selected-members");
+        if (selectedMembers.length === 0) {
+          el.innerHTML =
+            '<p class="text-xs text-slate-400 font-medium">Henüz üye seçilmedi.</p>';
+          return;
+        }
+        el.innerHTML = selectedMembers
+          .map(
+            (m) => `
+          <span class="flex items-center gap-2 bg-blue-50 text-blue-700 pl-2 pr-3 py-1 rounded-full text-xs font-bold">
+            <img src="${m.avatar || "https://i.pravatar.cc/150?u=" + m.id}" class="w-5 h-5 rounded-full object-cover">
+            ${escapeHtml(m.name)}
+            <button onclick="toggleMember(${m.id}, '${escapeAttr(m.name)}', '${escapeAttr(m.avatar)}')" class="hover:text-red-600">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </span>
+        `,
+          )
+          .join("");
+      }
+
+      async function createGroup() {
+        const name = document.getElementById("group-name-input").value.trim();
+        if (!name) {
+          showToast("Grup adı boş olamaz", "error");
+          return;
+        }
+        if (selectedMembers.length === 0) {
+          showToast("En az 1 üye seç", "error");
+          return;
+        }
+
+        const btn = document.getElementById("create-group-btn");
+        btn.disabled = true;
+        btn.textContent = "Oluşturuluyor...";
+
+        try {
+          const res = await apiPost("/api/messages/groups", {
+            name,
+            member_ids: selectedMembers.map((m) => m.id),
+          });
+          closeNewGroupModal();
+          await loadConversations();
+          loadChat(res.id);
+          showToast(`🎉 "${name}" grubu oluşturuldu!`);
+        } catch (err) {
+          showToast("Hata: " + err.message, "error");
+        } finally {
+          btn.disabled = false;
+          btn.textContent = "Grup Oluştur";
+        }
+      }
+
+      // ============== YARDIMCILAR ==============
+      function checkEnter(e) {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          sendMessage();
+        }
+      }
+      function autoResize(textarea) {
+        textarea.style.height = "auto";
+        textarea.style.height = textarea.scrollHeight + "px";
+      }
+      function scrollToBottom() {
+        const c = document.getElementById("messages-container");
+        c.scrollTop = c.scrollHeight;
+      }
+      function closeChatMobile() {
+        document.getElementById("chat-sidebar").classList.remove("hidden");
+        document.getElementById("chat-area").classList.add("hidden");
+        document.getElementById("chat-area").classList.remove("flex");
+      }
+      // ============== BİLDİRİMLER ==============
+      async function toggleNotifications(e) {
+        e?.stopPropagation();
+        const dd = document.getElementById("notif-dropdown");
+        if (!dd) return;
+        const isOpen = dd.classList.contains("open");
+        if (isOpen) { dd.classList.remove("open"); return; }
+        await renderNotifications();
+        dd.classList.add("open");
+      }
+
+      async function renderNotifications() {
+        const dd = document.getElementById("notif-dropdown");
+        dd.innerHTML = `<div class="p-4 text-center text-sm text-slate-400">Yükleniyor...</div>`;
+        try {
+          const data = await apiGet("/api/notifications");
+          const items = data.items || [];
+          const header = `
+            <div class="flex items-center justify-between p-4 border-b border-slate-100">
+              <h3 class="font-extrabold text-slate-900 text-sm flex items-center gap-2">
+                <i class="fa-regular fa-bell text-blue-600"></i> Bildirimler
+              </h3>
+              ${data.unread > 0 ? `<button onclick="markAllRead()" class="text-[11px] font-bold text-blue-600 hover:text-blue-700">Hepsini Okundu Say</button>` : ""}
+            </div>`;
+          const typeIcons = {
+            application: "fa-solid fa-briefcase text-blue-600",
+            message: "fa-regular fa-message text-emerald-600",
+            payment: "fa-solid fa-wallet text-amber-600",
+            review: "fa-solid fa-star text-yellow-500",
+            survey: "fa-solid fa-chart-simple text-purple-600",
+            system: "fa-solid fa-bell text-slate-500",
+          };
+          const list = items.length === 0
+            ? `<div class="p-8 text-center text-sm text-slate-400 font-medium">
+                 <i class="fa-regular fa-bell-slash text-3xl mb-2 opacity-40"></i>
+                 <p>Henüz bildirim yok.</p>
+               </div>`
+            : `<div class="overflow-y-auto" style="max-height:55vh">
+                 ${items.map((n) => {
+                   const icon = typeIcons[n.type] || typeIcons.system;
+                   const time = relativeTime(n.created_at);
+                   return `
+                   <div class="flex gap-3 p-4 border-b border-slate-50 hover:bg-slate-50 transition ${n.is_read ? "" : "bg-blue-50/40"}">
+                     <div class="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
+                       <i class="${icon} text-sm"></i>
+                     </div>
+                     <div class="flex-1 min-w-0">
+                       <p class="text-sm font-bold text-slate-900 truncate">${escapeHtml(n.title)}</p>
+                       ${n.body ? `<p class="text-xs text-slate-500 mt-0.5 line-clamp-2">${escapeHtml(n.body)}</p>` : ""}
+                       <p class="text-[10px] font-bold text-slate-400 mt-1">${time}</p>
+                     </div>
+                     <div class="flex flex-col gap-1 shrink-0">
+                       ${!n.is_read ? `<button onclick="markNotifRead(${n.id})" title="Okundu işaretle" class="w-6 h-6 rounded-md hover:bg-blue-100 text-blue-600 transition"><i class="fa-solid fa-check text-[10px]"></i></button>` : ""}
+                       <button onclick="deleteNotif(${n.id})" title="Sil" class="w-6 h-6 rounded-md hover:bg-rose-100 text-rose-500 transition"><i class="fa-solid fa-trash text-[10px]"></i></button>
+                     </div>
+                   </div>`;
+                 }).join("")}
+               </div>`;
+          dd.innerHTML = header + list;
+          const badge = document.getElementById("notif-badge");
+          const badgeM = document.getElementById("notif-badge-mobile");
+          if (data.unread > 0) {
+            badge?.classList.remove("hidden"); badgeM?.classList.remove("hidden");
+          } else {
+            badge?.classList.add("hidden"); badgeM?.classList.add("hidden");
+          }
+        } catch (err) {
+          dd.innerHTML = `<div class="p-4 text-center text-xs text-rose-500">Yüklenemedi: ${escapeHtml(err.message)}</div>`;
+        }
+      }
+
+      async function markNotifRead(id) {
+        try { await apiPut(`/api/notifications/${id}/read`); renderNotifications(); }
+        catch (err) { showToast("Hata: " + err.message, "error"); }
+      }
+      async function markAllRead() {
+        try { await apiPut("/api/notifications/read-all"); renderNotifications(); showToast("Tüm bildirimler okundu işaretlendi."); }
+        catch (err) { showToast("Hata: " + err.message, "error"); }
+      }
+      async function deleteNotif(id) {
+        try { await apiDelete(`/api/notifications/${id}`); renderNotifications(); }
+        catch (err) { showToast("Hata: " + err.message, "error"); }
+      }
+
+      document.addEventListener("click", (e) => {
+        const dd = document.getElementById("notif-dropdown");
+        const btn = document.getElementById("notif-bell-btn");
+        if (!dd || !dd.classList.contains("open")) return;
+        if (dd.contains(e.target) || btn?.contains(e.target)) return;
+        dd.classList.remove("open");
+      });
+
+      function relativeTime(dateStr) {
+        const d = new Date(dateStr);
+        const diff = (Date.now() - d.getTime()) / 1000;
+        if (diff < 60) return "az önce";
+        if (diff < 3600) return `${Math.floor(diff / 60)} dk önce`;
+        if (diff < 86400) return `${Math.floor(diff / 3600)} sa önce`;
+        if (diff < 86400 * 7) return `${Math.floor(diff / 86400)} gün önce`;
+        const mn = ["Oca","Şub","Mar","Nis","May","Haz","Tem","Ağu","Eyl","Eki","Kas","Ara"];
+        return `${d.getDate()} ${mn[d.getMonth()]}`;
+      }
+
+      async function loadNotifBadge() {
+        try {
+          const data = await apiGet("/api/notifications");
+          const badge = document.getElementById("notif-badge");
+          const badgeM = document.getElementById("notif-badge-mobile");
+          if (data.unread > 0) {
+            badge?.classList.remove("hidden"); badgeM?.classList.remove("hidden");
+          }
+        } catch (err) { /* sessizce geç */ }
+      }
+
+      function escapeHtml(s) {
+        return (s == null ? "" : String(s)).replace(
+          /[&<>"']/g,
+          (c) =>
+            ({
+              "&": "&amp;",
+              "<": "&lt;",
+              ">": "&gt;",
+              '"': "&quot;",
+              "'": "&#39;",
+            })[c],
+        );
+      }
+      function escapeAttr(s) {
+        return (s == null ? "" : String(s))
+          .replace(/'/g, "\\'")
+          .replace(/"/g, "&quot;");
+      }
+      function formatChatTime(ts) {
+        if (!ts) return "";
+        const d = new Date(ts);
+        if (isNaN(d.getTime())) return ts;
+        const today = new Date();
+        const isToday = d.toDateString() === today.toDateString();
+        if (isToday) {
+          return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+        }
+        const days = ["Pzr", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"];
+        const diff = (today - d) / (1000 * 60 * 60 * 24);
+        if (diff < 7) return days[d.getDay()];
+        return `${d.getDate()}/${d.getMonth() + 1}`;
+      }
+      function formatTurkishDate(ts) {
+        if (!ts) return "";
+        const d = new Date(ts);
+        const aylar = [
+          "Ocak",
+          "Şubat",
+          "Mart",
+          "Nisan",
+          "Mayıs",
+          "Haziran",
+          "Temmuz",
+          "Ağustos",
+          "Eylül",
+          "Ekim",
+          "Kasım",
+          "Aralık",
+        ];
+        return `${d.getDate()} ${aylar[d.getMonth()]} ${d.getFullYear()}`;
+      }
+      function formatFileSize(bytes) {
+        if (!bytes) return "";
+        if (bytes < 1024) return bytes + " B";
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+        return (bytes / 1024 / 1024).toFixed(1) + " MB";
+      }
+
+      function showToast(message, type = "success") {
+        const container = document.getElementById("toast-container");
+        const toast = document.createElement("div");
+        toast.className = "toast flex items-center gap-2";
+        const colors = {
+          success: "text-green-400",
+          error: "text-red-400",
+          info: "text-blue-400",
+        };
+        const icons = {
+          success: "fa-circle-check",
+          error: "fa-circle-xmark",
+          info: "fa-circle-info",
+        };
+        toast.innerHTML = `<i class="fa-solid ${icons[type] || icons.success} ${colors[type] || colors.success}"></i> ${escapeHtml(message)}`;
+        container.appendChild(toast);
+        setTimeout(() => toast.classList.add("show"), 10);
+        setTimeout(() => {
+          toast.classList.remove("show");
+          setTimeout(() => toast.remove(), 300);
+        }, 2500);
+      }
+    </script>
+  </body>
+</html>

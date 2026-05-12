@@ -1,0 +1,717 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Günlükİş | Anketler</title>
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: { sans: ["Plus Jakarta Sans", "sans-serif"] },
+            colors: { brand: "#2563eb" },
+          },
+        },
+      };
+    </script>
+
+    <style>
+      body {
+        background-color: #f8fafc;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .glass-nav {
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+      }
+
+      /* Bildirim paneli */
+      .notif-dropdown {
+        position: absolute;
+        top: 55px;
+        right: 0;
+        width: 380px;
+        max-width: 90vw;
+        max-height: 70vh;
+        background: white;
+        border-radius: 1.25rem;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+        border: 1px solid #e2e8f0;
+        z-index: 60;
+        display: none;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .notif-dropdown.open { display: flex; }
+
+      .smooth-shadow {
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+      }
+      .hover-lift {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .hover-lift:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 25px -5px rgba(0, 0, 0, 0.05);
+      }
+
+      /* Özel Radio Buton Stili */
+      .custom-radio input:checked + div {
+        border-color: #2563eb;
+        background-color: #eff6ff;
+      }
+      .custom-radio input:checked + div .radio-dot {
+        background-color: #2563eb;
+        border-color: #2563eb;
+        box-shadow: inset 0 0 0 3px white;
+      }
+
+      /* Modal Animasyonları */
+      .modal-overlay {
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(4px);
+      }
+      .modal-content {
+        transform: translateY(20px) scale(0.95);
+        opacity: 0;
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      .modal-active .modal-overlay {
+        opacity: 1;
+        visibility: visible;
+      }
+      .modal-active .modal-content {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+      }
+
+      /* Toast */
+      #toast-container {
+        position: fixed;
+        bottom: 80px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        pointer-events: none;
+      }
+      .toast {
+        background: #1e293b;
+        color: white;
+        padding: 12px 24px;
+        border-radius: 100px;
+        font-size: 14px;
+        font-weight: 600;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        opacity: 0;
+        transform: translateY(20px);
+        transition: all 0.3s ease;
+      }
+      .toast.show {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      /* Loading Spinner */
+      .loader {
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        border-top: 3px solid white;
+        width: 18px;
+        height: 18px;
+        animation: spin 1s linear infinite;
+        display: none;
+      }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+  <body class="text-slate-800 antialiased selection:bg-blue-200 pb-20 md:pb-0">
+    <header class="fixed top-0 left-0 right-0 z-50 glass-nav">
+      <div class="max-w-7xl mx-auto px-4 lg:px-8">
+        <div class="flex items-center justify-between h-16 md:h-20">
+          <a href="index.html" class="flex items-center gap-3">
+            <div
+              class="bg-blue-600 p-2.5 rounded-xl shadow-lg shadow-blue-500/30"
+            >
+              <i class="fa-solid fa-briefcase text-white text-sm"></i>
+            </div>
+            <span class="text-xl font-extrabold tracking-tight text-slate-900"
+              >Günlükİş</span
+            >
+          </a>
+
+          <div class="hidden md:flex items-center gap-4">
+            <button
+              class="text-sm font-bold bg-slate-900 text-white px-6 py-2.5 rounded-full hover:bg-slate-800 transition shadow-md"
+            >
+              İş Ver
+            </button>
+            <div class="w-px h-6 bg-slate-200 mx-2"></div>
+            <div class="relative">
+              <button onclick="toggleNotifications(event)" id="notif-bell-btn"
+                class="relative p-2 text-slate-500 hover:text-slate-900 transition">
+                <i class="fa-regular fa-bell text-xl"></i>
+                <span id="notif-badge" class="hidden absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 border-2 border-white rounded-full"></span>
+              </button>
+              <div id="notif-dropdown" class="notif-dropdown"></div>
+            </div>
+            <div class="relative group cursor-pointer ml-2 py-4">
+              <div class="flex items-center gap-2">
+                <img src="https://i.pravatar.cc/150?img=32" alt="Profil"
+                  class="w-10 h-10 rounded-full object-cover border-2 border-slate-100 hover:border-blue-200 transition-colors" />
+                <i class="fa-solid fa-chevron-down text-slate-400 text-[10px] transition-transform duration-300 group-hover:rotate-180"></i>
+              </div>
+              <div class="absolute right-0 top-full mt-[-5px] w-60 bg-white border border-slate-100 rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 py-2 z-50">
+                <a href="profil.html" class="block px-5 py-3 text-[15px] font-bold text-slate-800 hover:bg-slate-50 hover:text-blue-600 transition">Üye profiline git</a>
+                <div class="h-px bg-slate-100 my-1"></div>
+                <a href="#" class="block px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition">Başvurularım</a>
+                <a href="#" class="block px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition">Favori İlanlarım</a>
+                <a href="#" class="block px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition">Özgeçmişler</a>
+                <a href="#" class="block px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition">İş Tercihleri</a>
+                <div class="h-px bg-slate-100 my-1"></div>
+                <a href="#" class="block px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition">Ayarlar</a>
+                <a href="#" class="block px-5 py-2.5 text-sm font-bold text-red-500 hover:bg-red-50 transition">Çıkış</a>
+              </div>
+            </div>
+          </div>
+
+          <div class="md:hidden flex items-center gap-4">
+            <button onclick="toggleNotifications(event)" class="relative text-slate-500">
+              <i class="fa-regular fa-bell text-xl"></i>
+              <span id="notif-badge-mobile" class="hidden absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 border-2 border-white rounded-full"></span>
+            </button>
+            <a href="profil.html"><img
+              src="https://i.pravatar.cc/150?img=32"
+              alt="Profil"
+              class="w-9 h-9 rounded-full object-cover border border-slate-200"
+            /></a>
+          </div>
+        </div>
+
+        <nav
+          class="hidden md:flex items-center justify-center gap-10 h-14 text-sm font-bold text-slate-500 border-t border-slate-200/60"
+        >
+          <a
+            href="index.html"
+            class="flex items-center gap-2 hover:text-slate-800 transition h-full"
+            ><i class="fa-solid fa-layer-group"></i> İşler</a
+          >
+          <a
+            href="takvim.html"
+            class="flex items-center gap-2 hover:text-slate-800 transition h-full"
+            ><i class="fa-regular fa-calendar"></i> Takvim</a
+          >
+          <a
+            href="mesaj.html"
+            class="flex items-center gap-2 hover:text-slate-800 transition h-full"
+            ><i class="fa-regular fa-message"></i> Mesajlar</a
+          >
+          <a
+            href="anket.html"
+            class="flex items-center gap-2 text-blue-600 border-b-2 border-blue-600 h-full"
+            ><i class="fa-solid fa-chart-simple"></i> Anket</a
+          >
+        </nav>
+      </div>
+    </header>
+
+    <main
+      class="pt-[80px] md:pt-[150px] px-4 lg:px-8 max-w-5xl mx-auto min-h-screen pb-16"
+    >
+      <div
+        class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10"
+      >
+        <div>
+          <h1
+            class="text-3xl md:text-4xl font-extrabold text-slate-900 mb-2 tracking-tight"
+          >
+            Anketler
+          </h1>
+          <p class="text-[15px] font-medium text-slate-500">
+            Şirketlerin gönderdiği anketleri doldur, ek bakiye ve profil puanı
+            kazan.
+          </p>
+        </div>
+
+        <div class="flex gap-4">
+          <div
+            class="bg-blue-50 border border-blue-100 px-5 py-3 rounded-2xl flex items-center gap-3"
+          >
+            <div
+              class="w-10 h-10 bg-white rounded-full flex items-center justify-center text-blue-600 shadow-sm"
+            >
+              <i class="fa-solid fa-wallet"></i>
+            </div>
+            <div>
+              <p class="text-xs font-bold text-slate-500 uppercase">
+                Anket Kazancı
+              </p>
+              <p class="text-lg font-black text-blue-700">150 ₺</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="surveys-grid">
+        <!-- Anketler API'den yüklenecek -->
+        <div class="bg-white border border-slate-100 rounded-[2rem] p-6 smooth-shadow flex items-center justify-center min-h-[200px] animate-pulse-soft md:col-span-2">
+          <p class="text-sm text-slate-400 font-medium">Anketler yükleniyor...</p>
+        </div>
+      </div>
+    </main>
+
+    <div
+      id="survey-modal"
+      class="fixed inset-0 z-[100] flex items-center justify-center modal-overlay"
+    >
+      <div
+        class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
+        onclick="closeSurveyModal()"
+      ></div>
+      <div
+        class="bg-white rounded-[2rem] p-6 w-[90%] max-w-xl relative z-10 modal-content shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar flex flex-col"
+      >
+        <button
+          onclick="closeSurveyModal()"
+          class="absolute top-5 right-5 w-8 h-8 flex items-center justify-center bg-slate-100 text-slate-500 rounded-full hover:bg-slate-200 transition"
+        >
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+
+        <div class="mb-6 border-b border-slate-100 pb-4 pr-8">
+          <p
+            class="text-xs font-bold text-blue-600 uppercase tracking-wide mb-1"
+            id="modal-company-name"
+          >
+            Firma Adı
+          </p>
+          <h2
+            class="text-xl font-extrabold text-slate-900"
+            id="modal-survey-title"
+          >
+            Anket Başlığı
+          </h2>
+        </div>
+
+        <form
+          id="survey-form"
+          onsubmit="submitSurvey(event)"
+          class="space-y-8 flex-1"
+        >
+          <div id="survey-questions-container"></div>
+
+          <div class="pt-4 border-t border-slate-100 mt-auto">
+            <button
+              type="submit"
+              id="submit-survey-btn"
+              class="w-full bg-blue-600 text-white font-bold py-4 rounded-xl text-[15px] hover:bg-blue-700 transition shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2"
+            >
+              <span id="survey-btn-text">Anketi Tamamla ve Gönder</span>
+              <div id="survey-loader" class="loader"></div>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <nav
+      class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around items-center h-16 pb-safe z-40"
+    >
+      <a
+        href="index.html"
+        class="flex flex-col items-center gap-1 text-slate-400 w-1/4"
+        ><i class="fa-solid fa-layer-group text-lg"></i
+        ><span class="text-[10px] font-bold">İşler</span></a
+      >
+      <a
+        href="takvim.html"
+        class="flex flex-col items-center gap-1 text-slate-400 w-1/4"
+        ><i class="fa-solid fa-calendar text-lg"></i
+        ><span class="text-[10px] font-bold">Takvim</span></a
+      >
+      <a
+        href="mesaj.html"
+        class="flex flex-col items-center gap-1 text-slate-400 w-1/4"
+        ><i class="fa-regular fa-message text-lg"></i
+        ><span class="text-[10px] font-bold">Mesajlar</span></a
+      >
+      <a
+        href="#"
+        class="flex flex-col items-center gap-1 text-blue-600 w-1/4 relative"
+        ><i class="fa-solid fa-chart-simple text-lg"></i
+        ><span class="text-[10px] font-bold">Anket</span></a
+      >
+    </nav>
+
+    <div id="toast-container"></div>
+
+    <script src="/js/api.js"></script>
+    <script>
+      // ============================================================
+      // ANKET — Backend API'sine bağlı
+      // ============================================================
+      let currentSurveyId = null;
+      let currentQuestions = [];
+
+      // Firma adına göre kart ikonu (gösterim için)
+      const companyIcons = {
+        'Getir':            { icon: 'fa-motorcycle', color: 'text-blue-500',   bg: 'bg-slate-50',   border: 'border-slate-100' },
+        'Trendyol Express': { icon: 'fa-box',        color: 'text-orange-500', bg: 'bg-orange-50',  border: 'border-orange-100' },
+        'Trendyol Depo':    { icon: 'fa-box',        color: 'text-orange-500', bg: 'bg-orange-50',  border: 'border-orange-100' },
+        'Hilton Otelleri':  { icon: 'fa-hotel',      color: 'text-slate-400',  bg: 'bg-white',      border: 'border-slate-200' },
+      };
+
+      function getIconForCompany(name) {
+        return companyIcons[name] || { icon: 'fa-building', color: 'text-slate-500', bg: 'bg-slate-50', border: 'border-slate-100' };
+      }
+
+      // Anketleri listele
+      async function loadSurveys() {
+        try {
+          const surveys = await apiGet('/api/surveys');
+          const grid = document.getElementById('surveys-grid');
+
+          if (surveys.length === 0) {
+            grid.innerHTML = `
+              <div class="bg-white border border-slate-100 rounded-[2rem] p-8 text-center md:col-span-2">
+                <i class="fa-solid fa-clipboard text-4xl text-slate-300 mb-3"></i>
+                <p class="text-sm text-slate-500 font-medium">Şu anda aktif anket yok.</p>
+              </div>`;
+            return;
+          }
+
+          grid.innerHTML = surveys.map(s => {
+            const isCompleted = s.is_completed == 1 || s.is_completed === true;
+            const ic = getIconForCompany(s.employer_name);
+
+            // Ödül etiketi
+            let rewardBadge;
+            if (isCompleted) {
+              rewardBadge = `<div class="absolute top-6 right-6 flex items-center gap-1 bg-slate-200 text-slate-600 px-3 py-1.5 rounded-lg text-xs font-bold">Ödül Alındı</div>`;
+            } else if (s.reward_type === 'balance') {
+              rewardBadge = `<div class="absolute top-6 right-6 flex items-center gap-1 bg-emerald-50 text-emerald-600 px-3 py-1.5 rounded-lg text-xs font-bold border border-emerald-100"><i class="fa-solid fa-gift"></i> +${formatBudget(s.reward_amount)} ₺ Bakiye</div>`;
+            } else if (s.reward_type === 'points') {
+              rewardBadge = `<div class="absolute top-6 right-6 flex items-center gap-1 bg-amber-50 text-amber-600 px-3 py-1.5 rounded-lg text-xs font-bold border border-amber-100"><i class="fa-solid fa-star"></i> +${s.reward_amount} Profil Puanı</div>`;
+            } else {
+              rewardBadge = '';
+            }
+
+            // Buton durumu
+            const button = isCompleted
+              ? `<button disabled class="w-full bg-slate-200 text-slate-500 font-bold py-3.5 rounded-xl text-[14px] cursor-not-allowed flex items-center justify-center gap-2"><i class="fa-solid fa-check"></i> Tamamlandı</button>`
+              : `<button onclick="openSurveyModal(${s.id}, '${escapeAttr(s.employer_name)}', '${escapeAttr(s.title)}')" class="w-full bg-slate-900 text-white font-bold py-3.5 rounded-xl text-[14px] hover:bg-blue-600 transition-colors shadow-md shadow-slate-900/10">Ankete Başla</button>`;
+
+            return `
+              <div class="${isCompleted ? 'bg-slate-50 opacity-70' : 'bg-white hover-lift'} border border-slate-100 rounded-[2rem] p-6 smooth-shadow flex flex-col relative" id="survey-card-${s.id}">
+                ${rewardBadge}
+                <div class="flex items-center gap-4 mb-5 mt-2">
+                  <div class="w-14 h-14 rounded-2xl ${ic.bg} border ${ic.border} flex items-center justify-center shrink-0">
+                    <i class="fa-solid ${ic.icon} ${ic.color} text-2xl"></i>
+                  </div>
+                  <div>
+                    <h3 class="font-bold text-slate-900 text-sm">${escapeHtml(s.employer_name)}</h3>
+                    <p class="text-xs font-semibold text-slate-400">${escapeHtml(s.subtitle || 'Anket')}</p>
+                  </div>
+                </div>
+                <h2 class="text-[17px] font-extrabold text-slate-900 mb-2">${escapeHtml(s.title)}</h2>
+                <p class="text-sm font-medium text-slate-500 mb-6 flex-1">${escapeHtml(s.description || '')}</p>
+                <div class="flex items-center gap-4 mb-6 text-sm font-bold text-slate-600">
+                  <span class="flex items-center gap-1.5"><i class="fa-regular fa-clock text-slate-400"></i> Yaklaşık ${s.estimated_minutes || '—'} dk</span>
+                  <span class="flex items-center gap-1.5"><i class="fa-solid fa-list-ul text-slate-400"></i> ${s.question_count} Soru</span>
+                </div>
+                ${button}
+              </div>`;
+          }).join('');
+        } catch (err) {
+          showToast('Anketler yüklenemedi: ' + err.message, 'error');
+        }
+      }
+
+      // Modalı aç ve soruları yükle
+      async function openSurveyModal(id, company, title) {
+        currentSurveyId = id;
+        document.getElementById('modal-company-name').innerText = company;
+        document.getElementById('modal-survey-title').innerText = title;
+        document.getElementById('survey-form').reset();
+
+        const container = document.getElementById('survey-questions-container');
+        container.innerHTML = '<p class="text-sm text-slate-400 font-medium text-center py-4">Sorular yükleniyor...</p>';
+
+        document.getElementById('survey-modal').classList.add('modal-active');
+        document.body.style.overflow = 'hidden';
+
+        try {
+          const data = await apiGet(`/api/surveys/${id}`);
+          currentQuestions = data.questions;
+          renderQuestions(data.questions);
+        } catch (err) {
+          container.innerHTML = `<p class="text-sm text-red-500 font-medium text-center py-4">Hata: ${err.message}</p>`;
+        }
+      }
+
+      // Soruları render et
+      function renderQuestions(questions) {
+        const container = document.getElementById('survey-questions-container');
+        container.innerHTML = questions.map((q, idx) => {
+          const num = idx + 1;
+          const req = q.is_required ? 'required' : '';
+
+          if (q.question_type === 'single_choice' || q.question_type === 'multi_choice') {
+            const inputType = q.question_type === 'multi_choice' ? 'checkbox' : 'radio';
+            return `
+              <div class="mb-8">
+                <label class="block text-[15px] font-extrabold text-slate-800 mb-4">${num}. ${escapeHtml(q.question_text)}</label>
+                <div class="space-y-3">
+                  ${(q.options || []).map(opt => `
+                    <label class="cursor-pointer block">
+                      <input type="${inputType}" name="q-${q.id}" value="${opt.id}" ${req} class="peer hidden" />
+                      <div class="flex items-center gap-3 p-4 border border-slate-200 rounded-xl transition-all peer-checked:bg-blue-50 peer-checked:border-blue-500">
+                        <div class="w-5 h-5 rounded-full border-2 border-slate-300 transition-colors flex items-center justify-center peer-checked:border-blue-500 peer-checked:bg-blue-500"></div>
+                        <span class="font-medium text-slate-700 text-sm">${escapeHtml(opt.option_text)}</span>
+                      </div>
+                    </label>
+                  `).join('')}
+                </div>
+              </div>`;
+          }
+
+          if (q.question_type === 'rating') {
+            return `
+              <div class="mb-8">
+                <label class="block text-[15px] font-extrabold text-slate-800 mb-4">${num}. ${escapeHtml(q.question_text)}</label>
+                <div class="flex justify-between items-center gap-2">
+                  ${[1,2,3,4,5].map(n => `
+                    <label class="cursor-pointer flex-1">
+                      <input type="radio" name="q-${q.id}" value="${n}" ${req} class="peer hidden" />
+                      <div class="py-3 text-center border border-slate-200 rounded-xl font-bold text-slate-500 peer-checked:bg-blue-600 peer-checked:text-white peer-checked:border-blue-600 transition">${n}</div>
+                    </label>
+                  `).join('')}
+                </div>
+                <div class="flex justify-between text-[11px] font-semibold text-slate-400 mt-2">
+                  <span>Çok Kötü</span><span>Çok İyi</span>
+                </div>
+              </div>`;
+          }
+
+          // text
+          return `
+            <div class="mb-8">
+              <label class="block text-[15px] font-extrabold text-slate-800 mb-4">${num}. ${escapeHtml(q.question_text)}${q.is_required ? '' : ' <span class="text-xs font-medium text-slate-400">(İsteğe Bağlı)</span>'}</label>
+              <textarea name="q-${q.id}" ${req} rows="3"
+                placeholder="Görüşlerinizi buraya yazabilirsiniz..."
+                class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:border-blue-500 focus:bg-white outline-none transition resize-none"></textarea>
+            </div>`;
+        }).join('');
+      }
+
+      function closeSurveyModal() {
+        document.getElementById('survey-modal').classList.remove('modal-active');
+        document.body.style.overflow = '';
+      }
+
+      // Anketi gönder (backend POST)
+      async function submitSurvey(event) {
+        event.preventDefault();
+        const btnText = document.getElementById('survey-btn-text');
+        const loader = document.getElementById('survey-loader');
+        const btn = document.getElementById('submit-survey-btn');
+
+        // Cevapları topla
+        const answers = currentQuestions.map(q => {
+          const inputs = document.querySelectorAll(`[name="q-${q.id}"]`);
+          if (q.question_type === 'single_choice') {
+            const sel = document.querySelector(`input[name="q-${q.id}"]:checked`);
+            return sel ? { question_id: q.id, option_id: parseInt(sel.value) } : null;
+          }
+          if (q.question_type === 'multi_choice') {
+            const sels = document.querySelectorAll(`input[name="q-${q.id}"]:checked`);
+            return [...sels].map(s => ({ question_id: q.id, option_id: parseInt(s.value) }));
+          }
+          if (q.question_type === 'rating') {
+            const sel = document.querySelector(`input[name="q-${q.id}"]:checked`);
+            return sel ? { question_id: q.id, rating_value: parseInt(sel.value) } : null;
+          }
+          // text
+          const ta = document.querySelector(`textarea[name="q-${q.id}"]`);
+          return ta && ta.value.trim() ? { question_id: q.id, text_answer: ta.value.trim() } : null;
+        }).flat().filter(Boolean);
+
+        btnText.innerText = 'Gönderiliyor...';
+        loader.style.display = 'block';
+        btn.disabled = true;
+        btn.classList.add('opacity-90', 'cursor-not-allowed');
+
+        try {
+          const res = await apiPost(`/api/surveys/${currentSurveyId}/submit`, { answers });
+          btnText.innerText = 'Anketi Tamamla ve Gönder';
+          loader.style.display = 'none';
+          btn.disabled = false;
+          btn.classList.remove('opacity-90', 'cursor-not-allowed');
+          closeSurveyModal();
+          const rewardMsg = res.reward && res.reward.reward_type === 'balance'
+            ? ` ${formatBudget(res.reward.reward_amount)} ₺ bakiyenize eklendi!`
+            : (res.reward && res.reward.reward_type === 'points'
+                ? ` ${res.reward.reward_amount} profil puanı kazandınız!`
+                : '');
+          showToast('Teşekkürler! Anketiniz iletildi.' + rewardMsg + ' 🎉');
+          loadSurveys();
+        } catch (err) {
+          btnText.innerText = 'Anketi Tamamla ve Gönder';
+          loader.style.display = 'none';
+          btn.disabled = false;
+          btn.classList.remove('opacity-90', 'cursor-not-allowed');
+          showToast('Hata: ' + err.message, 'error');
+        }
+      }
+
+      function escapeHtml(s) {
+        return (s == null ? '' : String(s)).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+      }
+      function escapeAttr(s) {
+        return (s == null ? '' : String(s)).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+      }
+
+      window.addEventListener('DOMContentLoaded', () => {
+        loadSurveys();
+        loadNotifBadge();
+      });
+
+      // ============== BİLDİRİMLER ==============
+      async function toggleNotifications(e) {
+        e?.stopPropagation();
+        const dd = document.getElementById("notif-dropdown");
+        if (!dd) return;
+        const isOpen = dd.classList.contains("open");
+        if (isOpen) { dd.classList.remove("open"); return; }
+        await renderNotifications();
+        dd.classList.add("open");
+      }
+
+      async function renderNotifications() {
+        const dd = document.getElementById("notif-dropdown");
+        dd.innerHTML = `<div class="p-4 text-center text-sm text-slate-400">Yükleniyor...</div>`;
+        try {
+          const data = await apiGet("/api/notifications");
+          const items = data.items || [];
+          const header = `
+            <div class="flex items-center justify-between p-4 border-b border-slate-100">
+              <h3 class="font-extrabold text-slate-900 text-sm flex items-center gap-2">
+                <i class="fa-regular fa-bell text-blue-600"></i> Bildirimler
+              </h3>
+              ${data.unread > 0 ? `<button onclick="markAllRead()" class="text-[11px] font-bold text-blue-600 hover:text-blue-700">Hepsini Okundu Say</button>` : ""}
+            </div>`;
+          const typeIcons = {
+            application: "fa-solid fa-briefcase text-blue-600",
+            message: "fa-regular fa-message text-emerald-600",
+            payment: "fa-solid fa-wallet text-amber-600",
+            review: "fa-solid fa-star text-yellow-500",
+            survey: "fa-solid fa-chart-simple text-purple-600",
+            system: "fa-solid fa-bell text-slate-500",
+          };
+          const list = items.length === 0
+            ? `<div class="p-8 text-center text-sm text-slate-400 font-medium">
+                 <i class="fa-regular fa-bell-slash text-3xl mb-2 opacity-40"></i>
+                 <p>Henüz bildirim yok.</p>
+               </div>`
+            : `<div class="overflow-y-auto" style="max-height:55vh">
+                 ${items.map((n) => {
+                   const icon = typeIcons[n.type] || typeIcons.system;
+                   const time = relativeTime(n.created_at);
+                   return `
+                   <div class="flex gap-3 p-4 border-b border-slate-50 hover:bg-slate-50 transition ${n.is_read ? "" : "bg-blue-50/40"}">
+                     <div class="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
+                       <i class="${icon} text-sm"></i>
+                     </div>
+                     <div class="flex-1 min-w-0">
+                       <p class="text-sm font-bold text-slate-900 truncate">${escapeHtml(n.title)}</p>
+                       ${n.body ? `<p class="text-xs text-slate-500 mt-0.5 line-clamp-2">${escapeHtml(n.body)}</p>` : ""}
+                       <p class="text-[10px] font-bold text-slate-400 mt-1">${time}</p>
+                     </div>
+                     <div class="flex flex-col gap-1 shrink-0">
+                       ${!n.is_read ? `<button onclick="markNotifRead(${n.id})" title="Okundu işaretle" class="w-6 h-6 rounded-md hover:bg-blue-100 text-blue-600 transition"><i class="fa-solid fa-check text-[10px]"></i></button>` : ""}
+                       <button onclick="deleteNotif(${n.id})" title="Sil" class="w-6 h-6 rounded-md hover:bg-rose-100 text-rose-500 transition"><i class="fa-solid fa-trash text-[10px]"></i></button>
+                     </div>
+                   </div>`;
+                 }).join("")}
+               </div>`;
+          dd.innerHTML = header + list;
+          const badge = document.getElementById("notif-badge");
+          const badgeM = document.getElementById("notif-badge-mobile");
+          if (data.unread > 0) {
+            badge?.classList.remove("hidden"); badgeM?.classList.remove("hidden");
+          } else {
+            badge?.classList.add("hidden"); badgeM?.classList.add("hidden");
+          }
+        } catch (err) {
+          dd.innerHTML = `<div class="p-4 text-center text-xs text-rose-500">Yüklenemedi: ${escapeHtml(err.message)}</div>`;
+        }
+      }
+
+      async function markNotifRead(id) {
+        try { await apiPut(`/api/notifications/${id}/read`); renderNotifications(); }
+        catch (err) { showToast("Hata: " + err.message, "error"); }
+      }
+      async function markAllRead() {
+        try { await apiPut("/api/notifications/read-all"); renderNotifications(); showToast("Tüm bildirimler okundu işaretlendi."); }
+        catch (err) { showToast("Hata: " + err.message, "error"); }
+      }
+      async function deleteNotif(id) {
+        try { await apiDelete(`/api/notifications/${id}`); renderNotifications(); }
+        catch (err) { showToast("Hata: " + err.message, "error"); }
+      }
+
+      document.addEventListener("click", (e) => {
+        const dd = document.getElementById("notif-dropdown");
+        const btn = document.getElementById("notif-bell-btn");
+        if (!dd || !dd.classList.contains("open")) return;
+        if (dd.contains(e.target) || btn?.contains(e.target)) return;
+        dd.classList.remove("open");
+      });
+
+      function relativeTime(dateStr) {
+        const d = new Date(dateStr);
+        const diff = (Date.now() - d.getTime()) / 1000;
+        if (diff < 60) return "az önce";
+        if (diff < 3600) return `${Math.floor(diff / 60)} dk önce`;
+        if (diff < 86400) return `${Math.floor(diff / 3600)} sa önce`;
+        if (diff < 86400 * 7) return `${Math.floor(diff / 86400)} gün önce`;
+        const mn = ["Oca","Şub","Mar","Nis","May","Haz","Tem","Ağu","Eyl","Eki","Kas","Ara"];
+        return `${d.getDate()} ${mn[d.getMonth()]}`;
+      }
+
+      async function loadNotifBadge() {
+        try {
+          const data = await apiGet("/api/notifications");
+          const badge = document.getElementById("notif-badge");
+          const badgeM = document.getElementById("notif-badge-mobile");
+          if (data.unread > 0) {
+            badge?.classList.remove("hidden"); badgeM?.classList.remove("hidden");
+          }
+        } catch (err) { /* sessizce geç */ }
+      }
+    </script>
+  </body>
+</html>
