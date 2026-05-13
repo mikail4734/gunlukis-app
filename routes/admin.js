@@ -287,8 +287,136 @@ router.get('/applications', async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// AM I ADMIN? (Frontend kontrolü için)
+// İLETİŞİM MESAJLARI (Gelen Kutusu)
 // ═══════════════════════════════════════════════════════════════════════════
-// Bu endpoint dış kullanım için — admin middleware'i ATLAR
+router.get('/contact-messages', async (req, res) => {
+  try {
+    const filter = req.query.filter || 'all'; // all, new, replied
+    let sql = `
+      SELECT cm.*, u.full_name AS user_name, u.avatar_url AS user_avatar
+      FROM contact_messages cm
+      LEFT JOIN users u ON u.id = cm.user_id
+      WHERE 1=1`;
+    if (filter === 'new')     sql += " AND cm.status IN ('new','read')";
+    if (filter === 'replied') sql += " AND cm.status = 'replied'";
+    if (filter === 'archived')sql += " AND cm.status = 'archived'";
+    sql += ' ORDER BY cm.created_at DESC LIMIT 200';
+    const [rows] = await db.query(sql);
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Okundu işaretle
+router.post('/contact-messages/:id/read', async (req, res) => {
+  try {
+    await db.query(
+      "UPDATE contact_messages SET status = 'read' WHERE id = ? AND status = 'new'",
+      [req.params.id]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Cevap ver — bildirim olarak gönder
+router.post('/contact-messages/:id/reply', async (req, res) => {
+  try {
+    const adminId = req.session.userId;
+    const { reply } = req.body;
+    if (!reply || !reply.trim())
+      return res.status(400).json({ error: 'Cevap boş olamaz' });
+
+    const [rows] = await db.query('SELECT * FROM contact_messages WHERE id = ?', [req.params.id]);
+    if (rows.length === 0) return res.status(404).json({ error: 'Mesaj bulunamadı' });
+    const msg = rows[0];
+
+    await db.query(
+      `UPDATE contact_messages SET reply = ?, replied_by = ?, replied_at = NOW(), status = 'replied' WHERE id = ?`,
+      [reply.trim(), adminId, req.params.id]
+    );
+
+    // Kullanıcı kayıtlıysa bildirim gönder
+    if (msg.user_id) {
+      await db.query(
+        `INSERT INTO notifications (user_id, type, title, body, link_url)
+         VALUES (?, 'system', ?, ?, ?)`,
+        [
+          msg.user_id,
+          'Destek ekibinden cevap aldın 📬',
+          reply.trim().slice(0, 200),
+          '/profil.html'
+        ]
+      );
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.delete('/contact-messages/:id', async (req, res) => {
+  try {
+    await db.query('DELETE FROM contact_messages WHERE id = ?', [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get('/contact-messages/unread-count', async (req, res) => {
+  try {
+    const [[r]] = await db.query("SELECT COUNT(*) AS cnt FROM contact_messages WHERE status = 'new'");
+    res.json({ count: r.cnt });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ═══════════════════════════════════════════════════════════════════════════
+// BİLDİRİM GÖNDERME (Broadcast)
+// POST /broadcast { audience: 'all'|'new_users'|'selected', user_ids?: [], title, body, link_url? }
+// ═══════════════════════════════════════════════════════════════════════════
+router.post('/broadcast', async (req, res) => {
+  try {
+    const { audience, user_ids, title, body, link_url } = req.body;
+    if (!title || !body) return res.status(400).json({ error: 'Başlık ve içerik zorunludur' });
+
+    let targetIds = [];
+
+    if (audience === 'all') {
+      const [rows] = await db.query("SELECT id FROM users WHERE status = 'active' AND is_banned = 0");
+      targetIds = rows.map(r => r.id);
+    } else if (audience === 'new_users') {
+      // Son 7 günde kaydolanlar
+      const [rows] = await db.query(
+        "SELECT id FROM users WHERE status='active' AND is_banned=0 AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)"
+      );
+      targetIds = rows.map(r => r.id);
+    } else if (audience === 'selected') {
+      if (!Array.isArray(user_ids) || user_ids.length === 0)
+        return res.status(400).json({ error: 'Kullanıcı listesi boş' });
+      targetIds = user_ids.map(Number).filter(Boolean);
+    } else {
+      return res.status(400).json({ error: 'Geçersiz hedef kitle' });
+    }
+
+    if (targetIds.length === 0) return res.json({ success: true, sent: 0 });
+
+    // Toplu insert (bulk)
+    const values = targetIds.map(uid => [uid, 'system', title.slice(0, 200), body.slice(0, 500), link_url || null]);
+    await db.query(
+      `INSERT INTO notifications (user_id, type, title, body, link_url) VALUES ?`,
+      [values]
+    );
+
+    res.json({ success: true, sent: targetIds.length });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

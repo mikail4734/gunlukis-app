@@ -58,6 +58,27 @@
     .gold { color: #fbbf24; }
     .silver { color: #cbd5e1; }
     .bronze { color: #d97706; }
+
+    /* Mesaj kartı */
+    .msg-card { background: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 16px; transition: all .2s; }
+    .msg-card:hover { border-color: #475569; }
+    .msg-card.new { border-left: 3px solid #ef4444; }
+    .msg-card.replied { border-left: 3px solid #10b981; opacity: 0.85; }
+    .msg-body { background: #0f172a; padding: 12px; border-radius: 10px; color: #cbd5e1; font-size: 13px; line-height: 1.6; white-space: pre-wrap; }
+    .reply-block { background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.2); border-radius: 10px; padding: 12px; margin-top: 10px; }
+
+    /* Audience seçim */
+    .aud-btn { cursor: pointer; opacity: 0.6; transition: all .15s; }
+    .aud-btn:hover { opacity: 1; }
+    .aud-btn.active { opacity: 1; border-color: #3b82f6; box-shadow: 0 4px 12px rgba(59,130,246,.2); }
+
+    /* User picker */
+    .picker-row { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 10px; cursor: pointer; transition: all .15s; }
+    .picker-row:hover { background: #283548; }
+    .picker-row.selected { background: rgba(59,130,246,0.15); }
+    .user-tag { display: inline-flex; align-items: center; gap: 6px; background: #2563eb; color: white; padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+    .user-tag button { color: rgba(255,255,255,0.7); }
+    .user-tag button:hover { color: white; }
   </style>
 </head>
 <body class="font-sans antialiased pb-16">
@@ -123,6 +144,13 @@
         </button>
         <button class="tab-btn" data-tab="scores" onclick="switchTab(this)">
           <i class="fa-solid fa-trophy mr-1"></i> Puanlar
+        </button>
+        <button class="tab-btn relative" data-tab="messages" onclick="switchTab(this)">
+          <i class="fa-solid fa-envelope mr-1"></i> Gelen Mesajlar
+          <span id="msg-badge" class="hidden absolute -top-1 -right-1 bg-rose-500 text-white text-[9px] font-bold rounded-full px-1.5 py-0.5 min-w-[18px] text-center">0</span>
+        </button>
+        <button class="tab-btn" data-tab="broadcast" onclick="switchTab(this)">
+          <i class="fa-solid fa-bullhorn mr-1"></i> Bildirim Gönder
         </button>
       </div>
 
@@ -287,6 +315,86 @@
         </div>
       </div>
 
+      <!-- ─── GELEN MESAJLAR ─── -->
+      <div id="tab-messages" class="tab-pane hidden">
+        <div class="card p-4 mb-4 flex gap-2">
+          <button class="tab-btn active" data-msg-filter="all" onclick="switchMsgFilter(this)">Tümü</button>
+          <button class="tab-btn" data-msg-filter="new" onclick="switchMsgFilter(this)">Yeni / Okunmamış</button>
+          <button class="tab-btn" data-msg-filter="replied" onclick="switchMsgFilter(this)">Cevaplananlar</button>
+        </div>
+        <div id="messages-list" class="space-y-3">
+          <div class="text-center text-slate-400 py-12">Yükleniyor...</div>
+        </div>
+      </div>
+
+      <!-- ─── BİLDİRİM GÖNDER ─── -->
+      <div id="tab-broadcast" class="tab-pane hidden">
+        <div class="card p-6 max-w-2xl mx-auto">
+          <div class="flex items-center gap-3 mb-6 pb-4 border-b border-slate-700">
+            <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center text-white shadow-lg">
+              <i class="fa-solid fa-bullhorn"></i>
+            </div>
+            <div>
+              <h2 class="text-lg font-extrabold text-white">Bildirim Gönder</h2>
+              <p class="text-xs text-slate-400">Seçtiğin kitleye anlık bildirim gönder.</p>
+            </div>
+          </div>
+
+          <!-- Hedef Kitle -->
+          <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Hedef Kitle</label>
+          <div class="grid grid-cols-3 gap-2 mb-5">
+            <button type="button" onclick="setAudience('all')" data-aud="all"
+              class="aud-btn active card p-3 text-center transition hover:border-blue-500">
+              <i class="fa-solid fa-globe text-blue-400 text-xl mb-1"></i>
+              <p class="text-xs font-bold text-white">Herkes</p>
+              <p class="text-[10px] text-slate-400" id="aud-all-count">— kişi</p>
+            </button>
+            <button type="button" onclick="setAudience('new_users')" data-aud="new_users"
+              class="aud-btn card p-3 text-center transition hover:border-emerald-500">
+              <i class="fa-solid fa-user-plus text-emerald-400 text-xl mb-1"></i>
+              <p class="text-xs font-bold text-white">Yeni Üyeler</p>
+              <p class="text-[10px] text-slate-400">Son 7 gün</p>
+            </button>
+            <button type="button" onclick="setAudience('selected')" data-aud="selected"
+              class="aud-btn card p-3 text-center transition hover:border-amber-500">
+              <i class="fa-solid fa-user-tag text-amber-400 text-xl mb-1"></i>
+              <p class="text-xs font-bold text-white">Seçilen Kişiler</p>
+              <p class="text-[10px] text-slate-400"><span id="selected-count">0</span> seçili</p>
+            </button>
+          </div>
+
+          <!-- Seçilen Kullanıcılar (sadece selected modunda) -->
+          <div id="user-picker" class="hidden mb-5 card p-4 bg-slate-800">
+            <input type="text" id="user-picker-search" oninput="filterUserPicker()"
+              placeholder="İsim ara..." class="field mb-3" />
+            <div id="user-picker-list" class="max-h-60 overflow-y-auto space-y-1"></div>
+            <div id="selected-users-tags" class="flex flex-wrap gap-1.5 mt-3 pt-3 border-t border-slate-700"></div>
+          </div>
+
+          <!-- Başlık -->
+          <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Başlık *</label>
+          <input id="broadcast-title" type="text" maxlength="100"
+            placeholder="Örn: 🎉 Yeni özellik eklendi!"
+            class="field mb-4" />
+
+          <!-- Mesaj -->
+          <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Mesaj *</label>
+          <textarea id="broadcast-body" rows="4" maxlength="500"
+            placeholder="Bildirim içeriği..."
+            class="field resize-none mb-4"></textarea>
+
+          <!-- Link (opsiyonel) -->
+          <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Link (opsiyonel)</label>
+          <input id="broadcast-link" type="text" placeholder="Örn: /anket.html"
+            class="field mb-5" />
+
+          <button id="broadcast-btn" onclick="sendBroadcast()"
+            class="w-full py-3.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold text-sm rounded-xl hover:opacity-90 transition shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2">
+            <i class="fa-solid fa-paper-plane"></i> Bildirimi Gönder
+          </button>
+        </div>
+      </div>
+
       <!-- ─── PUANLAR (Sadece sen görebilirsin) ─── -->
       <div id="tab-scores" class="tab-pane hidden">
         <div class="card p-5 mb-4 bg-gradient-to-br from-amber-500/10 to-rose-500/10 border-amber-500/30">
@@ -365,6 +473,8 @@
       if (tabId === 'surveys') loadSurveys();
       if (tabId === 'applications') loadApplications();
       if (tabId === 'scores') loadScores();
+      if (tabId === 'messages') loadMessages();
+      if (tabId === 'broadcast') initBroadcast();
     }
 
     // ════════════════════════════════════════════
@@ -687,6 +797,275 @@
     }
 
     // ════════════════════════════════════════════
+    // GELEN MESAJLAR
+    // ════════════════════════════════════════════
+    let currentMsgFilter = 'all';
+
+    function switchMsgFilter(btn) {
+      document.querySelectorAll('[data-msg-filter]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentMsgFilter = btn.dataset.msgFilter;
+      loadMessages();
+    }
+
+    async function loadMessages() {
+      const cont = document.getElementById('messages-list');
+      cont.innerHTML = '<div class="text-center text-slate-400 py-8">Yükleniyor...</div>';
+      try {
+        const msgs = await apiGet('/api/admin/contact-messages?filter=' + currentMsgFilter);
+        if (msgs.length === 0) {
+          cont.innerHTML = `
+            <div class="text-center py-12">
+              <i class="fa-regular fa-envelope-open text-4xl text-slate-600 mb-3"></i>
+              <p class="text-slate-400 text-sm">Mesaj bulunamadı.</p>
+            </div>`;
+          return;
+        }
+
+        cont.innerHTML = msgs.map(m => {
+          const isNew = m.status === 'new';
+          const isReplied = m.status === 'replied';
+          const cls = isNew ? 'new' : (isReplied ? 'replied' : '');
+          const dateStr = new Date(m.created_at).toLocaleString('tr-TR', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
+          const replyDate = m.replied_at ? new Date(m.replied_at).toLocaleString('tr-TR', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) : '';
+          const avatar = m.user_avatar || ('https://i.pravatar.cc/100?u=' + (m.user_id || m.email));
+          const memberBadge = m.user_id
+            ? '<span class="badge badge-blue"><i class="fa-solid fa-user-check"></i> Üye</span>'
+            : '<span class="badge badge-amber"><i class="fa-regular fa-user"></i> Misafir</span>';
+
+          return `
+            <div class="msg-card ${cls}">
+              <div class="flex items-start justify-between gap-3 mb-3">
+                <div class="flex items-center gap-3 flex-1 min-w-0">
+                  <img src="${avatar}" class="w-10 h-10 rounded-full object-cover" />
+                  <div class="min-w-0 flex-1">
+                    <p class="font-bold text-white truncate">
+                      ${escapeHtml(m.name)}
+                      ${isNew ? '<span class="badge badge-red ml-1">YENİ</span>' : ''}
+                      ${isReplied ? '<span class="badge badge-green ml-1">Cevaplandı</span>' : ''}
+                    </p>
+                    <p class="text-[11px] text-slate-400">
+                      ${memberBadge}
+                      <a href="mailto:${escapeHtml(m.email)}" class="hover:text-blue-400">${escapeHtml(m.email)}</a>
+                      · ${dateStr}
+                    </p>
+                  </div>
+                </div>
+                <button onclick="deleteMessage(${m.id})" class="btn-icon btn-red shrink-0" title="Sil">
+                  <i class="fa-solid fa-trash text-xs"></i>
+                </button>
+              </div>
+
+              ${m.subject ? `<p class="text-xs font-bold text-slate-300 mb-2"><i class="fa-solid fa-tag mr-1 text-slate-500"></i>${escapeHtml(m.subject)}</p>` : ''}
+
+              <div class="msg-body">${escapeHtml(m.message)}</div>
+
+              ${isReplied ? `
+                <div class="reply-block">
+                  <p class="text-[10px] font-bold text-emerald-400 uppercase mb-1.5">
+                    <i class="fa-solid fa-reply"></i> Cevabın · ${replyDate}
+                  </p>
+                  <p class="text-sm text-slate-300 whitespace-pre-wrap">${escapeHtml(m.reply)}</p>
+                </div>
+              ` : `
+                <div class="mt-3">
+                  <textarea id="reply-${m.id}" rows="2" placeholder="Cevabını yaz..."
+                    class="field resize-none mb-2"></textarea>
+                  <button onclick="sendReply(${m.id}, ${m.user_id || 'null'})"
+                    class="px-4 py-2 bg-emerald-600 text-white font-bold text-xs rounded-lg hover:bg-emerald-700 transition">
+                    <i class="fa-solid fa-paper-plane mr-1"></i> Cevap Gönder ${m.user_id ? '(bildirim olarak iletilir)' : ''}
+                  </button>
+                </div>
+              `}
+            </div>`;
+        }).join('');
+      } catch (err) {
+        cont.innerHTML = `<div class="text-center text-rose-400 py-8">${escapeHtml(err.message)}</div>`;
+      }
+    }
+
+    async function sendReply(id, userId) {
+      const ta = document.getElementById('reply-' + id);
+      const reply = ta.value.trim();
+      if (!reply) return showToast('Cevap boş olamaz', 'error');
+      try {
+        await apiPost('/api/admin/contact-messages/' + id + '/reply', { reply });
+        showToast(userId ? 'Cevap kullanıcıya bildirim olarak iletildi 📬' : 'Cevap kaydedildi.');
+        loadMessages();
+        loadMessagesBadge();
+      } catch (err) { showToast(err.message, 'error'); }
+    }
+
+    async function deleteMessage(id) {
+      if (!confirm('Bu mesajı silmek istediğine emin misin?')) return;
+      try {
+        await apiDelete('/api/admin/contact-messages/' + id);
+        showToast('Mesaj silindi.');
+        loadMessages();
+        loadMessagesBadge();
+      } catch (err) { showToast(err.message, 'error'); }
+    }
+
+    async function loadMessagesBadge() {
+      try {
+        const r = await apiGet('/api/admin/contact-messages/unread-count');
+        const badge = document.getElementById('msg-badge');
+        if (r.count > 0) {
+          badge.textContent = r.count;
+          badge.classList.remove('hidden');
+        } else {
+          badge.classList.add('hidden');
+        }
+      } catch {}
+    }
+
+    // ════════════════════════════════════════════
+    // BİLDİRİM GÖNDER (Broadcast)
+    // ════════════════════════════════════════════
+    let currentAudience = 'all';
+    let broadcastSelectedIds = new Set();
+    let allUsersForPicker = [];
+
+    async function initBroadcast() {
+      // Toplam kullanıcı sayısını yükle
+      try {
+        const d = await apiGet('/api/admin/dashboard');
+        document.getElementById('aud-all-count').textContent = d.users + ' kişi';
+      } catch {}
+      setAudience(currentAudience);
+    }
+
+    function setAudience(aud) {
+      currentAudience = aud;
+      document.querySelectorAll('.aud-btn').forEach(b => b.classList.remove('active'));
+      document.querySelector(`.aud-btn[data-aud="${aud}"]`)?.classList.add('active');
+
+      const picker = document.getElementById('user-picker');
+      if (aud === 'selected') {
+        picker.classList.remove('hidden');
+        loadUserPicker();
+      } else {
+        picker.classList.add('hidden');
+      }
+    }
+
+    async function loadUserPicker() {
+      if (allUsersForPicker.length > 0) {
+        renderUserPicker();
+        return;
+      }
+      try {
+        allUsersForPicker = await apiGet('/api/admin/users?filter=all');
+        renderUserPicker();
+      } catch (err) {
+        document.getElementById('user-picker-list').innerHTML =
+          `<p class="text-rose-400 text-xs text-center py-4">${escapeHtml(err.message)}</p>`;
+      }
+    }
+
+    function filterUserPicker() {
+      renderUserPicker();
+    }
+
+    function renderUserPicker() {
+      const q = document.getElementById('user-picker-search').value.trim().toLowerCase();
+      const list = q
+        ? allUsersForPicker.filter(u =>
+            u.full_name.toLowerCase().includes(q) ||
+            u.email.toLowerCase().includes(q))
+        : allUsersForPicker;
+
+      const cont = document.getElementById('user-picker-list');
+      if (list.length === 0) {
+        cont.innerHTML = '<p class="text-slate-400 text-xs text-center py-4">Sonuç yok.</p>';
+        return;
+      }
+      cont.innerHTML = list.slice(0, 50).map(u => {
+        const isSel = broadcastSelectedIds.has(u.id);
+        return `
+          <div class="picker-row ${isSel ? 'selected' : ''}" onclick="toggleBroadcastUser(${u.id})">
+            <img src="${u.avatar_url || 'https://i.pravatar.cc/100?u='+u.id}" class="w-7 h-7 rounded-full" />
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-bold text-white truncate">${escapeHtml(u.full_name)}</p>
+              <p class="text-[10px] text-slate-400 truncate">${escapeHtml(u.email)}</p>
+            </div>
+            <div class="w-5 h-5 rounded-full border-2 ${isSel ? 'bg-blue-600 border-blue-600' : 'border-slate-500'} flex items-center justify-center shrink-0">
+              ${isSel ? '<i class="fa-solid fa-check text-white text-[10px]"></i>' : ''}
+            </div>
+          </div>`;
+      }).join('');
+      renderSelectedTags();
+    }
+
+    function toggleBroadcastUser(id) {
+      if (broadcastSelectedIds.has(id)) {
+        broadcastSelectedIds.delete(id);
+      } else {
+        broadcastSelectedIds.add(id);
+      }
+      renderUserPicker();
+      document.getElementById('selected-count').textContent = broadcastSelectedIds.size;
+    }
+
+    function renderSelectedTags() {
+      const cont = document.getElementById('selected-users-tags');
+      if (broadcastSelectedIds.size === 0) {
+        cont.innerHTML = '<span class="text-xs text-slate-500 font-medium">Henüz seçilen yok.</span>';
+        return;
+      }
+      cont.innerHTML = Array.from(broadcastSelectedIds).map(id => {
+        const u = allUsersForPicker.find(x => x.id === id);
+        if (!u) return '';
+        return `<span class="user-tag">
+          ${escapeHtml(u.full_name)}
+          <button onclick="toggleBroadcastUser(${id})"><i class="fa-solid fa-xmark text-[10px]"></i></button>
+        </span>`;
+      }).join('');
+    }
+
+    async function sendBroadcast() {
+      const title = document.getElementById('broadcast-title').value.trim();
+      const body = document.getElementById('broadcast-body').value.trim();
+      const link = document.getElementById('broadcast-link').value.trim();
+      if (!title || !body) return showToast('Başlık ve mesaj zorunlu', 'error');
+
+      if (currentAudience === 'selected' && broadcastSelectedIds.size === 0) {
+        return showToast('En az 1 kullanıcı seç', 'error');
+      }
+
+      const audienceLabels = { all: 'TÜM kullanıcılara', new_users: 'son 7 gün üye olanlara', selected: broadcastSelectedIds.size + ' seçili kişiye' };
+      if (!confirm(`Bu bildirimi ${audienceLabels[currentAudience]} göndermek istediğine emin misin?`)) return;
+
+      const btn = document.getElementById('broadcast-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Gönderiliyor...';
+
+      try {
+        const payload = {
+          audience: currentAudience,
+          title, body,
+          link_url: link || null,
+        };
+        if (currentAudience === 'selected') {
+          payload.user_ids = Array.from(broadcastSelectedIds);
+        }
+        const r = await apiPost('/api/admin/broadcast', payload);
+        showToast(`✓ ${r.sent} kişiye bildirim gönderildi`);
+        // Formu temizle
+        document.getElementById('broadcast-title').value = '';
+        document.getElementById('broadcast-body').value = '';
+        document.getElementById('broadcast-link').value = '';
+        broadcastSelectedIds.clear();
+        setAudience('all');
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Bildirimi Gönder';
+      }
+    }
+
+    // ════════════════════════════════════════════
     // INIT — Admin yetkisi kontrolü
     // ════════════════════════════════════════════
     window.addEventListener('DOMContentLoaded', async () => {
@@ -698,6 +1077,9 @@
         }
         document.getElementById('admin-content').classList.remove('hidden');
         loadDashboard();
+        loadMessagesBadge();
+        // Her 30 saniyede mesaj badge'ini güncelle
+        setInterval(loadMessagesBadge, 30000);
       } catch (err) {
         document.getElementById('access-denied').classList.remove('hidden');
       }
