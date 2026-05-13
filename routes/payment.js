@@ -3,9 +3,10 @@ const router = require('express').Router();
 const db = require('../config/db');
 
 // ─── SİSTEM AYARLARI ─────────────────────────────────────────────────────────
-const APPLICATION_FEE = 50;        // Her başvuruda alınan komisyon (₺)
+const HIRE_FEE        = 50;        // İşveren her işe alımda öder (kabul ettiğinde)
+const APPLICATION_FEE = 0;         // Başvuru ücretsiz (kaldırıldı)
 const MIN_WITHDRAWAL  = 100;       // Minimum çekim tutarı (₺)
-const COMMISSION_RATE = 0.05;      // İş ödemesinden alınan komisyon (%5)
+const COMMISSION_RATE = 0;         // İş ödemesinden ekstra komisyon yok (sadece işe alımda alınıyor)
 
 // ═══════════════════════════════════════════════════════════════════════════
 // CÜZDAN BİLGİSİ
@@ -36,6 +37,7 @@ router.get('/wallet', async (req, res) => {
         has_card:    !!u.card_last4
       },
       settings: {
+        hire_fee:         HIRE_FEE,
         application_fee:  APPLICATION_FEE,
         min_withdrawal:   MIN_WITHDRAWAL,
         commission_rate:  COMMISSION_RATE
@@ -324,11 +326,9 @@ router.post('/pay-worker', async (req, res) => {
       [employerId, -budget, empNewBalance, application_id, `İş ödemesi: ${app.title}`]
     );
 
-    // Komisyon hesapla (%5)
-    const commission = +(budget * COMMISSION_RATE).toFixed(2);
-    const workerEarning = budget - commission;
+    // Komisyon zaten işe alım sırasında alındı → işçi tam tutarı alır
+    const workerEarning = budget;
 
-    // İşçiye ekle (komisyon düşüldükten sonra)
     const [[wkr]] = await conn.query('SELECT wallet_balance, total_earnings FROM users WHERE id = ?', [app.worker_id]);
     const wkrNewBalance = parseFloat(wkr.wallet_balance) + workerEarning;
     const wkrNewEarnings = parseFloat(wkr.total_earnings) + workerEarning;
@@ -339,25 +339,21 @@ router.post('/pay-worker', async (req, res) => {
     await conn.query(`
       INSERT INTO transactions (user_id, type, amount, balance_after, status, reference_type, reference_id, note)
       VALUES (?, 'job_earning', ?, ?, 'completed', 'application', ?, ?)`,
-      [app.worker_id, workerEarning, wkrNewBalance, application_id,
-       `İş kazancı: ${app.title} (${commission} ₺ komisyon kesildi)`]
+      [app.worker_id, workerEarning, wkrNewBalance, application_id, `İş kazancı: ${app.title}`]
     );
 
-    // İşi tamamlandı işaretle
     await conn.query("UPDATE applications SET status='completed', completed_at=NOW() WHERE id = ?", [application_id]);
 
-    // İşçiye bildirim
     await conn.query(`
       INSERT INTO notifications (user_id, type, title, body, link_url)
       VALUES (?, 'payment', ?, ?, ?)`,
-      [app.worker_id, '💰 Ödemeni aldın!', `${workerEarning.toFixed(2)} ₺ hesabına eklendi. (${commission.toFixed(2)} ₺ platform komisyonu kesildi)`, '/profil.html']
+      [app.worker_id, '💰 Ödemeni aldın!', `${workerEarning.toFixed(2)} ₺ cüzdanına eklendi.`, '/cuzdan.html']
     );
 
     await conn.commit();
     res.json({
       success: true,
       paid: budget,
-      commission,
       worker_received: workerEarning,
       new_balance: empNewBalance
     });
@@ -369,7 +365,166 @@ router.post('/pay-worker', async (req, res) => {
   }
 });
 
+// ═══════════════════════════════════════════════════════════════════════════
+// GERÇEK ÖDEME ENTEGRASYONu — iyzico (Türkiye'nin en popüler ödeme sağlayıcısı)
+// ─────────────────────────────────────────────────────────────────────────────
+// Bunu aktive etmek için:
+//   1) iyzico.com → Hesap aç → Marketplace başvurusu (şirket/şahıs)
+//   2) Onay sonrası Dashboard'dan API key + Secret key al
+//   3) .env dosyasına ekle:
+//      IYZICO_API_KEY=sandbox-xxxxx
+//      IYZICO_SECRET=sandbox-xxxxx
+//      IYZICO_BASE_URL=https://sandbox-api.iyzipay.com  (test için)
+//      Canlı için: https://api.iyzipay.com
+//   4) `npm install iyzipay`
+//   5) Aşağıdaki USE_REAL_PAYMENT'i true yap
+// ═══════════════════════════════════════════════════════════════════════════
+const USE_REAL_PAYMENT = process.env.IYZICO_API_KEY ? true : false;
+
+// iyzico ödeme başlat — kullanıcıyı ödeme sayfasına yönlendirir
+router.post('/iyzico/init', async (req, res) => {
+  try {
+    const uid = req.session.userId;
+    if (!uid) return res.status(401).json({ error: 'Giriş yapılmamış' });
+    const { amount } = req.body;
+    const amt = parseFloat(amount);
+    if (!amt || amt < 10) return res.status(400).json({ error: 'Min 10 ₺' });
+
+    if (!USE_REAL_PAYMENT) {
+      return res.status(503).json({
+        error: 'iyzico entegrasyonu henüz aktif değil',
+        instructions: 'Yöneticinin .env dosyasına IYZICO_API_KEY ve IYZICO_SECRET eklemesi gerekli.',
+        howto: 'https://iyzico.com (Marketplace hesabı açın)'
+      });
+    }
+
+    // ─── GERÇEK iyzico ÇAĞRISI (npm install iyzipay sonrası) ───
+    const Iyzipay = require('iyzipay');
+    const iyzipay = new Iyzipay({
+      apiKey: process.env.IYZICO_API_KEY,
+      secretKey: process.env.IYZICO_SECRET,
+      uri: process.env.IYZICO_BASE_URL || 'https://sandbox-api.iyzipay.com'
+    });
+
+    const [[u]] = await db.query('SELECT full_name, email, phone FROM users WHERE id = ?', [uid]);
+
+    const request = {
+      locale: 'tr',
+      conversationId: 'gunluk-' + Date.now() + '-' + uid,
+      price: amt.toString(),
+      paidPrice: amt.toString(),
+      currency: 'TRY',
+      basketId: 'wallet-deposit-' + uid,
+      paymentGroup: 'PRODUCT',
+      callbackUrl: (process.env.SITE_URL || 'http://localhost:3000') + '/api/payment/iyzico/callback',
+      buyer: {
+        id: 'BY' + uid,
+        name: u.full_name.split(' ')[0],
+        surname: u.full_name.split(' ').slice(1).join(' ') || u.full_name,
+        gsmNumber: u.phone || '+905555555555',
+        email: u.email,
+        identityNumber: '74300864791', // TC Kimlik (canlı için gerçek lazım)
+        registrationAddress: 'Türkiye',
+        ip: req.ip,
+        city: 'Istanbul',
+        country: 'Turkey'
+      },
+      shippingAddress: {
+        contactName: u.full_name,
+        city: 'Istanbul',
+        country: 'Turkey',
+        address: 'Türkiye'
+      },
+      billingAddress: {
+        contactName: u.full_name,
+        city: 'Istanbul',
+        country: 'Turkey',
+        address: 'Türkiye'
+      },
+      basketItems: [{
+        id: 'WALLET_TOPUP',
+        name: 'Cüzdan Bakiye Yükleme',
+        category1: 'Sanal',
+        itemType: 'VIRTUAL',
+        price: amt.toString()
+      }]
+    };
+
+    iyzipay.checkoutFormInitialize.create(request, (err, result) => {
+      if (err || result.status !== 'success') {
+        return res.status(500).json({ error: result?.errorMessage || 'Ödeme başlatılamadı' });
+      }
+      // checkoutFormContent'i frontend'e gönder — iframe içinde gösterilecek
+      res.json({
+        token: result.token,
+        checkoutFormContent: result.checkoutFormContent,
+        paymentPageUrl: result.paymentPageUrl
+      });
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// iyzico callback — ödeme tamamlanınca buraya post eder
+router.post('/iyzico/callback', async (req, res) => {
+  try {
+    if (!USE_REAL_PAYMENT) return res.status(503).send('iyzico inactive');
+
+    const Iyzipay = require('iyzipay');
+    const iyzipay = new Iyzipay({
+      apiKey: process.env.IYZICO_API_KEY,
+      secretKey: process.env.IYZICO_SECRET,
+      uri: process.env.IYZICO_BASE_URL || 'https://sandbox-api.iyzipay.com'
+    });
+
+    iyzipay.checkoutForm.retrieve({ token: req.body.token }, async (err, result) => {
+      if (err || result.status !== 'success') return res.redirect('/cuzdan.html?error=payment_failed');
+      if (result.paymentStatus !== 'SUCCESS') return res.redirect('/cuzdan.html?error=payment_failed');
+
+      // Conversation'dan user_id'i çıkar
+      const parts = result.conversationId.split('-');
+      const uid = parseInt(parts[parts.length - 1]);
+      const amount = parseFloat(result.paidPrice);
+
+      // Kart bilgilerini güncelle (token + son 4 hane)
+      // result.cardLastFourDigits, result.cardAssociation (visa/mastercard)
+      try {
+        await db.query(
+          'UPDATE users SET card_last4 = ?, card_brand = ? WHERE id = ?',
+          [result.cardLastFourDigits || null, result.cardAssociation || null, uid]
+        );
+      } catch (e) {}
+
+      // Bakiyeyi ekle
+      const [[u]] = await db.query('SELECT wallet_balance FROM users WHERE id = ?', [uid]);
+      const newBal = parseFloat(u.wallet_balance) + amount;
+      await db.query('UPDATE users SET wallet_balance = ? WHERE id = ?', [newBal, uid]);
+      await db.query(`
+        INSERT INTO transactions (user_id, type, amount, balance_after, status, reference_type, note)
+        VALUES (?, 'deposit', ?, ?, 'completed', 'manual', ?)`,
+        [uid, amount, newBal, 'iyzico ile yüklendi (paymentId: ' + result.paymentId + ')']
+      );
+
+      res.redirect('/cuzdan.html?success=1');
+    });
+  } catch (err) {
+    res.redirect('/cuzdan.html?error=payment_failed');
+  }
+});
+
+// Payout (işçiye IBAN'a para gönder) - iyzico Sub-Merchant Transfer
+router.post('/iyzico/payout/:withdrawal_id', async (req, res) => {
+  // Sadece admin çağırabilir (kontrolü middleware'de yapılır)
+  if (!USE_REAL_PAYMENT) return res.status(503).json({ error: 'iyzico entegrasyonu aktif değil' });
+
+  // TODO: iyzico Sub-Merchant Transfer API ile gerçek IBAN transferi
+  // Detay: https://docs.iyzico.com/en/marketplace/sub-merchants
+  res.json({ status: 'pending_implementation', message: 'iyzico marketplace onayından sonra aktive edilecek' });
+});
+
 // chargeApplicationFee'yi dışa aç (jobs.js'den kullanmak için)
 module.exports = router;
 module.exports.chargeApplicationFee = chargeApplicationFee;
 module.exports.APPLICATION_FEE = APPLICATION_FEE;
+module.exports.HIRE_FEE = HIRE_FEE;

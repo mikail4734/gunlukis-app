@@ -464,17 +464,39 @@
 
     async function updateApplication(appId, status) {
       const labels = { accepted: 'kabul', rejected: 'reddet', completed: 'tamamlandı olarak işaretle' };
+
+      // Kabul ederken 50 ₺ komisyon uyarısı
+      if (status === 'accepted') {
+        const ok = confirm(
+          '⚠️ İşçiyi kabul etmek üzeresin.\n\n' +
+          '• Cüzdanından 50 ₺ işe alım komisyonu kesilecek\n' +
+          '• İşçinin başvurusu kabul olarak işaretlenecek\n' +
+          '• İşçiye bildirim gönderilecek\n\n' +
+          'Devam etmek istiyor musun?'
+        );
+        if (!ok) return;
+      }
+
       try {
-        await apiPut('/api/jobs/applications/' + appId + '/status', { status });
-        showToast('Başvuru ' + labels[status] + ' işlemi tamamlandı.');
-        // Modal'ı tazele
+        const r = await apiPut('/api/jobs/applications/' + appId + '/status', { status });
+        let msg = 'Başvuru ' + labels[status] + ' işlemi tamamlandı.';
+        if (r.hire_fee > 0) msg += ` (${r.hire_fee} ₺ komisyon kesildi)`;
+        showToast(msg);
         if (activeJobIdForApplicants) {
           const data = await apiGet('/api/jobs/' + activeJobIdForApplicants + '/applicants');
           renderApplicants(data.applicants);
         }
         loadJobs();
         loadStats();
-      } catch (err) { showToast(err.message, 'error'); }
+      } catch (err) {
+        if (err.message && err.message.includes('Yetersiz bakiye')) {
+          if (confirm(err.message + '\n\nCüzdanına bakiye yüklemek ister misin?')) {
+            window.location.href = 'cuzdan.html';
+          }
+        } else {
+          showToast(err.message, 'error');
+        }
+      }
     }
 
     async function payWorker(appId) {

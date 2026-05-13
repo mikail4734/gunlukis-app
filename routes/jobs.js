@@ -155,107 +155,104 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Bir ilana başvur (+ takvime otomatik kırmızı event ekle + 50₺ komisyon kes)
+// Bir ilana başvur — ÜCRETSİZ (komisyon yok, sadece işveren hire ettiğinde alınır)
 router.post('/:id/apply', async (req, res) => {
-  const conn = await db.getConnection();
   try {
-    await conn.beginTransaction();
     const uid = currentUserId(req);
     if (!req.session.userId) {
-      await conn.rollback();
       return res.status(401).json({ error: 'Başvurmak için giriş yapmalısın' });
     }
-
     const { cover_message } = req.body;
 
-    // Daha önce başvurmuş mu kontrol et
-    const [existing] = await conn.query(
-      'SELECT id FROM applications WHERE job_id = ? AND worker_id = ?',
-      [req.params.id, uid]
-    );
-    if (existing.length > 0) {
-      await conn.rollback();
-      return res.status(409).json({ error: 'Zaten başvurdun' });
-    }
-
-    // 50₺ başvuru komisyonu kes (cüzdandan)
-    const payment = require('./payment');
-    try {
-      await payment.chargeApplicationFee(uid, req.params.id, conn);
-    } catch (feeErr) {
-      await conn.rollback();
-      return res.status(402).json({ error: feeErr.message, requires_topup: true });
-    }
-
-    // Başvuruyu oluştur
-    await conn.query(
-      `INSERT INTO applications (job_id, worker_id, cover_message)
-       VALUES (?, ?, ?)`,
+    await db.query(
+      `INSERT INTO applications (job_id, worker_id, cover_message) VALUES (?, ?, ?)`,
       [req.params.id, uid, cover_message || null]
     );
-    await conn.query('UPDATE jobs SET applicant_count = applicant_count + 1 WHERE id = ?', [req.params.id]);
+    await db.query('UPDATE jobs SET applicant_count = applicant_count + 1 WHERE id = ?', [req.params.id]);
 
-    // Takvime otomatik kırmızı (rose) event ekle
-    const [jobs] = await conn.query(
-      'SELECT title, work_date, start_time FROM jobs WHERE id = ?',
-      [req.params.id]
-    );
-    if (jobs.length > 0) {
-      const j = jobs[0];
-      await conn.query(`
-        INSERT INTO calendar_events (user_id, job_id, title, note, event_date, start_time, color, source)
-        VALUES (?, ?, ?, ?, ?, ?, 'rose', 'job')
-        ON DUPLICATE KEY UPDATE color='rose'`,
-        [uid, req.params.id, j.title, 'Başvuru bekleniyor', j.work_date, j.start_time || null]
+    // Takvime otomatik kırmızı (rose) event ekle — pending durumu
+    try {
+      const [jobs] = await db.query(
+        'SELECT title, work_date, start_time FROM jobs WHERE id = ?',
+        [req.params.id]
       );
-    }
+      if (jobs.length > 0) {
+        const j = jobs[0];
+        await db.query(`
+          INSERT INTO calendar_events (user_id, job_id, title, note, event_date, start_time, color, source)
+          VALUES (?, ?, ?, ?, ?, ?, 'rose', 'job')
+          ON DUPLICATE KEY UPDATE color='rose'`,
+          [uid, req.params.id, j.title, 'Başvuru bekleniyor', j.work_date, j.start_time || null]
+        );
+      }
+    } catch (calErr) { console.error('Calendar event eklenemedi:', calErr.message); }
 
-    await conn.commit();
-    res.json({ success: true, fee_charged: payment.APPLICATION_FEE });
+    res.json({ success: true });
   } catch (err) {
-    await conn.rollback();
     if (err.code === 'ER_DUP_ENTRY') {
       return res.status(409).json({ error: 'Zaten başvurdun' });
     }
     res.status(500).json({ error: err.message });
-  } finally {
-    conn.release();
   }
 });
 
-// Başvuru durumunu güncelle (işveren tarafı) — takvim rengi otomatik değişir
-// PUT /api/jobs/applications/:applicationId/status  body: { status: 'accepted' | 'rejected' }
+// Başvuru durumunu güncelle (işveren tarafı) — kabul ederse 50₺ komisyon kesilir
 router.put('/applications/:applicationId/status', async (req, res) => {
+  const conn = await db.getConnection();
   try {
+    await conn.beginTransaction();
     const employerId = currentUserId(req);
     const appId = req.params.applicationId;
     const { status } = req.body;
 
-    if (!['accepted', 'rejected', 'completed', 'pending'].includes(status))
+    if (!['accepted', 'rejected', 'completed', 'pending'].includes(status)) {
+      await conn.rollback();
       return res.status(400).json({ error: 'Geçersiz durum' });
+    }
 
     // İlanın bu kullanıcıya ait olup olmadığını kontrol et
-    const [rows] = await db.query(`
-      SELECT a.id, a.worker_id, a.job_id, j.employer_id, j.title
+    const [rows] = await conn.query(`
+      SELECT a.id, a.worker_id, a.job_id, a.status AS current_status, j.employer_id, j.title
       FROM applications a JOIN jobs j ON j.id = a.job_id
       WHERE a.id = ?`, [appId]);
 
-    if (rows.length === 0) return res.status(404).json({ error: 'Başvuru bulunamadı' });
+    if (rows.length === 0) { await conn.rollback(); return res.status(404).json({ error: 'Başvuru bulunamadı' }); }
     const app = rows[0];
-    if (app.employer_id !== employerId)
+    if (app.employer_id !== employerId) {
+      await conn.rollback();
       return res.status(403).json({ error: 'Bu başvuruyu güncelleme yetkin yok' });
+    }
 
-    await db.query(
+    // ─── İŞE ALIM KOMİSYONU: pending → accepted geçişinde 50₺ kes ───
+    const HIRE_FEE = 50;
+    if (status === 'accepted' && app.current_status === 'pending') {
+      const [[emp]] = await conn.query('SELECT wallet_balance FROM users WHERE id = ?', [employerId]);
+      if (parseFloat(emp.wallet_balance) < HIRE_FEE) {
+        await conn.rollback();
+        return res.status(402).json({
+          error: `Yetersiz bakiye. İşe alım komisyonu ${HIRE_FEE} ₺. Mevcut: ${emp.wallet_balance} ₺`,
+          requires_topup: true
+        });
+      }
+      const newBalance = parseFloat(emp.wallet_balance) - HIRE_FEE;
+      await conn.query('UPDATE users SET wallet_balance = ? WHERE id = ?', [newBalance, employerId]);
+      await conn.query(`
+        INSERT INTO transactions (user_id, type, amount, balance_after, status, reference_type, reference_id, note)
+        VALUES (?, 'commission', ?, ?, 'completed', 'application', ?, ?)`,
+        [employerId, -HIRE_FEE, newBalance, appId, `İşe alım komisyonu: ${app.title}`]
+      );
+    }
+
+    await conn.query(
       'UPDATE applications SET status = ?, responded_at = NOW() WHERE id = ?',
       [status, appId]
     );
 
-    // Worker'ın takvimindeki ilgili event'in rengini güncelle
     const colorMap = {
-      accepted:  'emerald', // yeşil
-      rejected:  'slate',   // gri
+      accepted:  'emerald',
+      rejected:  'slate',
       completed: 'blue',
-      pending:   'rose'     // kırmızı
+      pending:   'rose'
     };
     const newColor = colorMap[status] || 'slate';
     const noteMap = {
@@ -265,15 +262,33 @@ router.put('/applications/:applicationId/status', async (req, res) => {
       pending:   'Başvuru bekleniyor'
     };
 
-    await db.query(
-      `UPDATE calendar_events SET color = ?, note = ?
-       WHERE user_id = ? AND job_id = ?`,
+    await conn.query(
+      `UPDATE calendar_events SET color = ?, note = ? WHERE user_id = ? AND job_id = ?`,
       [newColor, noteMap[status] || '', app.worker_id, app.job_id]
     );
 
-    res.json({ success: true, status, color: newColor });
+    // İşçiye bildirim
+    if (status === 'accepted') {
+      await conn.query(`
+        INSERT INTO notifications (user_id, type, title, body, link_url)
+        VALUES (?, 'application', '✓ Başvurun kabul edildi!', ?, '/profil.html#basvurularim')`,
+        [app.worker_id, `"${app.title}" işine kabul edildin. İşveren senle iletişime geçecek.`]
+      );
+    } else if (status === 'rejected') {
+      await conn.query(`
+        INSERT INTO notifications (user_id, type, title, body, link_url)
+        VALUES (?, 'application', '✗ Başvurun reddedildi', ?, '/profil.html#basvurularim')`,
+        [app.worker_id, `"${app.title}" işine başvurun reddedildi.`]
+      );
+    }
+
+    await conn.commit();
+    res.json({ success: true, status, color: newColor, hire_fee: (status === 'accepted' && app.current_status === 'pending') ? HIRE_FEE : 0 });
   } catch (err) {
+    await conn.rollback();
     res.status(500).json({ error: err.message });
+  } finally {
+    conn.release();
   }
 });
 

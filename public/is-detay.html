@@ -564,14 +564,6 @@
       // Başvuru (gerçek API)
       async function applyForJob(btn) {
         if (btn.classList.contains('applied')) return;
-
-        // 50 ₺ komisyon onayı
-        const confirmed = confirm(
-          '⚠️ Bu işe başvurmak için cüzdanından 50 ₺ platform ücreti kesilecek.\n\n' +
-          'Devam etmek istiyor musun?'
-        );
-        if (!confirmed) return;
-
         const txt = document.getElementById('apply-text');
         const loader = document.getElementById('apply-loader');
         txt.innerText = 'Başvuruluyor...';
@@ -584,18 +576,12 @@
           txt.innerHTML = '<i class="fa-solid fa-check"></i> Başvuruldu';
           btn.classList.remove('bg-blue-600', 'hover:bg-blue-700', 'shadow-blue-500/20', 'opacity-90');
           btn.classList.add('bg-emerald-500', 'applied');
-          showToast('Başvurun iletildi! 50 ₺ komisyon cüzdanından kesildi. 🎉');
+          showToast('Başvurun iletildi! İşveren değerlendirecek. 🎉');
         } catch (err) {
           loader.style.display = 'none';
           txt.innerText = 'Hemen Başvur';
           btn.classList.remove('opacity-90', 'cursor-not-allowed');
-          if (err.message && err.message.includes('Yetersiz bakiye')) {
-            if (confirm(err.message + '\n\nCüzdanına bakiye yüklemek ister misin?')) {
-              window.location.href = 'cuzdan.html';
-            }
-          } else {
-            showToast(err.message, 'error');
-          }
+          showToast(err.message, 'error');
         }
       }
 
