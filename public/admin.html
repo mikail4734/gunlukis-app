@@ -46,8 +46,8 @@
     .btn-amber:hover { background: rgba(245,158,11,0.3); }
     .modal-overlay { opacity: 0; visibility: hidden; transition: all 0.3s ease; backdrop-filter: blur(8px); }
     .modal-content { transform: translateY(20px) scale(0.95); opacity: 0; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
-    .modal-active .modal-overlay { opacity: 1; visibility: visible; }
-    .modal-active .modal-content { transform: translateY(0) scale(1); opacity: 1; }
+    .modal-overlay.modal-active { opacity: 1; visibility: visible; }
+    .modal-overlay.modal-active .modal-content { transform: translateY(0) scale(1); opacity: 1; }
     .stat-card { background: linear-gradient(135deg, #1e293b, #2a3650); border: 1px solid #334155; border-radius: 18px; padding: 18px; transition: all 0.2s; }
     .stat-card:hover { transform: translateY(-2px); border-color: #475569; }
     table { width: 100%; }

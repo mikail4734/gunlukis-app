@@ -37,8 +37,8 @@
     .badge-completed { background: #dbeafe; color: #1d4ed8; }
     .modal-overlay { opacity: 0; visibility: hidden; transition: all 0.3s ease; backdrop-filter: blur(4px); }
     .modal-content { transform: translateY(20px) scale(0.95); opacity: 0; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
-    .modal-active .modal-overlay { opacity: 1; visibility: visible; }
-    .modal-active .modal-content { transform: translateY(0) scale(1); opacity: 1; }
+    .modal-overlay.modal-active { opacity: 1; visibility: visible; }
+    .modal-overlay.modal-active .modal-content { transform: translateY(0) scale(1); opacity: 1; }
   </style>
 </head>
 <body class="text-slate-800 antialiased pb-20 md:pb-0">

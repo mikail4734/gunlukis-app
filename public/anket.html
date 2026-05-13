@@ -34,8 +34,8 @@
     .filter-pill:hover:not(.active) { background: #e2e8f0; color: #334155; }
     .modal-overlay { opacity: 0; visibility: hidden; transition: all 0.3s ease; backdrop-filter: blur(4px); }
     .modal-content { transform: translateY(20px) scale(0.95); opacity: 0; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
-    .modal-active .modal-overlay { opacity: 1; visibility: visible; }
-    .modal-active .modal-content { transform: translateY(0) scale(1); opacity: 1; }
+    .modal-overlay.modal-active { opacity: 1; visibility: visible; }
+    .modal-overlay.modal-active .modal-content { transform: translateY(0) scale(1); opacity: 1; }
     .skel { background: linear-gradient(90deg,#e2e8f0 0%,#f1f5f9 50%,#e2e8f0 100%); background-size: 200% 100%; animation: skel 1.5s infinite; border-radius: 24px; }
     @keyframes skel { 0%{background-position:0% 0%} 100%{background-position:-200% 0%} }
     .q-opt { display: flex; align-items: center; padding: 12px 14px; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px; cursor: pointer; transition: all .15s; margin-bottom: 8px; font-size: 14px; font-weight: 600; color: #334155; }
