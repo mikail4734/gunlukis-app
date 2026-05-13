@@ -446,9 +446,9 @@
                     </button>
                   ` : ''}
                   ${a.status === 'accepted' ? `
-                    <button onclick="updateApplication(${a.id}, 'completed')"
-                      class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition">
-                      <i class="fa-solid fa-trophy mr-1"></i> İşi Tamamlandı İşaretle
+                    <button onclick="payWorker(${a.id})"
+                      class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition">
+                      <i class="fa-solid fa-money-bill-transfer mr-1"></i> Ödeme Yap & Tamamla
                     </button>
                   ` : ''}
                   <button onclick="messageApplicant(${a.worker_id})"
@@ -475,6 +475,28 @@
         loadJobs();
         loadStats();
       } catch (err) { showToast(err.message, 'error'); }
+    }
+
+    async function payWorker(appId) {
+      if (!confirm('İşçiye ödeme yapmak üzeresin.\n\n• İlanın bütçesi cüzdanından düşülecek\n• %5 platform komisyonu kesilip kalan kısım işçiye gidecek\n• Bu işlem geri alınamaz\n\nDevam etmek istiyor musun?')) return;
+      try {
+        const r = await apiPost('/api/payment/pay-worker', { application_id: appId });
+        showToast(`✓ Ödeme yapıldı! İşçiye ${r.worker_received.toFixed(2)} ₺ gönderildi (${r.commission.toFixed(2)} ₺ komisyon).`);
+        if (activeJobIdForApplicants) {
+          const data = await apiGet('/api/jobs/' + activeJobIdForApplicants + '/applicants');
+          renderApplicants(data.applicants);
+        }
+        loadJobs();
+        loadStats();
+      } catch (err) {
+        if (err.message && err.message.includes('Yetersiz bakiye')) {
+          if (confirm(err.message + '\n\nCüzdanına bakiye yüklemek ister misin?')) {
+            window.location.href = 'cuzdan.html';
+          }
+        } else {
+          showToast(err.message, 'error');
+        }
+      }
     }
 
     async function messageApplicant(userId) {

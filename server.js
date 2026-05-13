@@ -30,6 +30,7 @@ app.use('/api/surveys',  require('./routes/surveys'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/social',   require('./routes/social'));
 app.use('/api/admin',    require('./routes/admin'));
+app.use('/api/payment',  require('./routes/payment'));
 
 // Sağlık kontrolü
 app.get('/api/health', (req, res) => res.json({ ok: true, time: new Date() }));

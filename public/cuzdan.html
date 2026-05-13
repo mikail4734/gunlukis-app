@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <title>Günlükİş | Cüzdanım</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme: { extend: { fontFamily: { sans: ["Plus Jakarta Sans", "sans-serif"] } } } };
+  </script>
+  <style>
+    body { background:#f8fafc; }
+    .glass-nav { background:rgba(255,255,255,.9); backdrop-filter:blur(12px); border-bottom:1px solid rgba(226,232,240,.8); }
+    .smooth-shadow { box-shadow:0 4px 20px rgba(0,0,0,.03); }
+    #toast-container { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); z-index:9999; display:flex; flex-direction:column; gap:10px; pointer-events:none; }
+    .toast { background:#1e293b; color:white; padding:12px 24px; border-radius:100px; font-size:14px; font-weight:600; box-shadow:0 10px 25px rgba(0,0,0,.1); opacity:0; transform:translateY(20px); transition:all 0.3s ease; }
+    .toast.show { opacity:1; transform:translateY(0); }
+    .field { width:100%; padding:12px 14px; background:#f8fafc; border:1.5px solid #e2e8f0; border-radius:12px; font-size:14px; font-weight:600; color:#0f172a; transition:all .15s; }
+    .field:focus { outline:none; border-color:#2563eb; background:white; box-shadow:0 0 0 3px rgba(59,130,246,.1); }
+    .wallet-card { background: linear-gradient(135deg, #1e3a8a, #4f46e5 60%, #7c3aed); position:relative; overflow:hidden; }
+    .wallet-card::before { content:''; position:absolute; right:-30px; top:-30px; width:200px; height:200px; background:radial-gradient(circle, rgba(255,255,255,.15), transparent 70%); }
+    .wallet-card::after { content:''; position:absolute; left:-50px; bottom:-50px; width:160px; height:160px; background:radial-gradient(circle, rgba(255,255,255,.1), transparent 70%); }
+    .modal-overlay { opacity:0; visibility:hidden; transition:all 0.3s ease; backdrop-filter:blur(4px); }
+    .modal-content { transform:translateY(20px) scale(.95); opacity:0; transition:all 0.3s cubic-bezier(0.16,1,0.3,1); }
+    .modal-overlay.modal-active { opacity:1; visibility:visible; }
+    .modal-overlay.modal-active .modal-content { transform:translateY(0) scale(1); opacity:1; }
+    .tx-icon { width:38px; height:38px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:14px; }
+  </style>
+</head>
+<body class="text-slate-800 antialiased pb-20 md:pb-0">
+
+  <!-- HEADER -->
+  <header class="fixed top-0 left-0 right-0 z-50 glass-nav">
+    <div class="max-w-7xl mx-auto px-4 lg:px-8">
+      <div class="flex items-center justify-between h-16 md:h-20">
+        <a href="index.html" class="flex items-center gap-3">
+          <div class="bg-blue-600 p-2.5 rounded-xl shadow-lg shadow-blue-500/30"><i class="fa-solid fa-briefcase text-white text-sm"></i></div>
+          <span class="text-xl font-extrabold tracking-tight text-slate-900">Günlükİş</span>
+        </a>
+        <a href="profil.html" class="text-sm font-semibold text-slate-500 hover:text-slate-900 transition flex items-center gap-2">
+          <i class="fa-solid fa-arrow-left text-xs"></i> Profile Dön
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="pt-[80px] md:pt-[100px] px-4 lg:px-8 max-w-3xl mx-auto pb-16">
+    <h1 class="text-2xl md:text-3xl font-extrabold text-slate-900 mb-2">Cüzdanım</h1>
+    <p class="text-sm text-slate-500 mb-6">Bakiyeni yönet, kart/IBAN ekle, işlem geçmişini gör.</p>
+
+    <!-- BAKİYE KARTI -->
+    <div class="wallet-card rounded-[2rem] p-6 md:p-8 text-white smooth-shadow mb-8 relative">
+      <div class="relative z-10">
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <p class="text-blue-200 text-xs font-bold uppercase tracking-wider mb-1">Kullanılabilir Bakiye</p>
+            <p class="text-4xl md:text-5xl font-black"><span id="wallet-balance">0,00</span> <span class="text-2xl text-blue-200">₺</span></p>
+          </div>
+          <i class="fa-solid fa-wallet text-4xl text-blue-200/30"></i>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 mb-5 text-sm">
+          <div class="bg-white/10 backdrop-blur rounded-2xl p-3">
+            <p class="text-blue-200 text-[10px] font-bold uppercase">Bekleyen</p>
+            <p class="text-lg font-extrabold mt-0.5"><span id="pending-balance">0</span> ₺</p>
+          </div>
+          <div class="bg-white/10 backdrop-blur rounded-2xl p-3">
+            <p class="text-blue-200 text-[10px] font-bold uppercase">Toplam Kazanç</p>
+            <p class="text-lg font-extrabold mt-0.5"><span id="total-earnings">0</span> ₺</p>
+          </div>
+        </div>
+
+        <div class="flex gap-2">
+          <button onclick="openDepositModal()" class="flex-1 bg-white text-slate-900 font-bold text-sm py-3 rounded-xl hover:bg-slate-100 transition shadow-lg">
+            <i class="fa-solid fa-plus mr-1"></i> Bakiye Yükle
+          </button>
+          <button onclick="openWithdrawModal()" class="flex-1 bg-white/15 hover:bg-white/25 backdrop-blur text-white font-bold text-sm py-3 rounded-xl transition border border-white/20">
+            <i class="fa-solid fa-money-bill-transfer mr-1"></i> Para Çek
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ÖDEME BİLGİLERİ -->
+    <div class="bg-white border border-slate-100 rounded-[2rem] p-6 md:p-8 smooth-shadow mb-6">
+      <div class="flex items-center justify-between mb-5">
+        <div>
+          <h2 class="text-lg font-extrabold text-slate-900">Ödeme Bilgileri</h2>
+          <p class="text-xs text-slate-500 mt-0.5">Para çekmek için IBAN, bakiye yüklemek için kart eklemelisin.</p>
+        </div>
+        <button onclick="openPaymentInfoModal()" class="text-xs font-bold text-blue-600 hover:text-blue-700">
+          <i class="fa-solid fa-pen-to-square mr-1"></i> Düzenle
+        </button>
+      </div>
+
+      <!-- Kart -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div id="card-display" class="bg-gradient-to-br from-slate-900 to-slate-700 rounded-2xl p-5 text-white relative overflow-hidden">
+          <div class="absolute right-3 top-3 text-2xl font-black opacity-80" id="card-brand">—</div>
+          <i class="fa-solid fa-microchip text-2xl text-amber-300 mb-6"></i>
+          <p class="text-lg font-mono tracking-widest mb-2" id="card-number">•••• •••• •••• ••••</p>
+          <p class="text-[10px] text-slate-300 uppercase tracking-wider">Kart Sahibi</p>
+          <p class="font-bold text-sm" id="card-name">—</p>
+        </div>
+
+        <!-- IBAN -->
+        <div class="bg-slate-50 border border-slate-100 rounded-2xl p-5">
+          <div class="flex items-center gap-2 mb-2">
+            <i class="fa-solid fa-building-columns text-blue-600"></i>
+            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">IBAN</p>
+          </div>
+          <p id="iban-display" class="font-mono text-sm font-bold text-slate-700 mb-3 break-all">—</p>
+          <p class="text-[11px] text-slate-400 font-medium">Para çekmek için kullanılacak.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- KOMİSYON BİLGİSİ -->
+    <div class="bg-amber-50 border border-amber-100 rounded-2xl p-4 mb-6 flex gap-3 items-start">
+      <i class="fa-solid fa-circle-info text-amber-600 mt-0.5"></i>
+      <div class="text-xs text-amber-800 font-medium leading-relaxed">
+        <p class="font-bold mb-1">Komisyon Bilgisi</p>
+        <p>• Her iş başvurusunda <strong>50 ₺ platform ücreti</strong> alınır (cüzdanından düşer).</p>
+        <p>• İşveren işçiye ödeme yaptığında <strong>%5 komisyon</strong> kesilir.</p>
+        <p>• Minimum para çekme tutarı: <strong>100 ₺</strong></p>
+      </div>
+    </div>
+
+    <!-- İŞLEM GEÇMİŞİ -->
+    <div class="bg-white border border-slate-100 rounded-[2rem] p-6 md:p-8 smooth-shadow">
+      <h2 class="text-lg font-extrabold text-slate-900 mb-4">İşlem Geçmişi</h2>
+      <div id="transactions-list" class="space-y-2">
+        <p class="text-sm text-slate-400 text-center py-4">Yükleniyor...</p>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ÖDEME BİLGİLERİ MODAL -->
+  <div id="payment-info-modal" class="fixed inset-0 z-[100] flex items-center justify-center modal-overlay">
+    <div class="absolute inset-0 bg-slate-900/60" onclick="closePaymentInfoModal()"></div>
+    <div class="bg-white rounded-[2rem] w-[92%] max-w-md p-6 relative z-10 modal-content shadow-2xl max-h-[90vh] overflow-y-auto">
+      <h2 class="text-lg font-extrabold text-slate-900 mb-1">Ödeme Bilgilerin</h2>
+      <p class="text-xs text-slate-500 mb-5">Kart numarasının <strong>sadece son 4 hanesi</strong> kaydedilir — tam numaran asla saklanmaz (PCI-DSS uyumlu).</p>
+
+      <form onsubmit="savePaymentInfo(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-400 uppercase mb-2">IBAN</label>
+          <input id="form-iban" type="text" placeholder="TR12 3456 7890 1234 5678 9012 34"
+            maxlength="34" class="field font-mono" />
+          <p class="text-[10px] text-slate-400 mt-1">TR ile başlamalı, toplam 26 karakter</p>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Kart Sahibi</label>
+          <input id="form-cardholder" type="text" placeholder="AD SOYAD" maxlength="100" class="field uppercase" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Kart Numarası</label>
+          <input id="form-cardnumber" type="text" placeholder="0000 0000 0000 0000"
+            maxlength="23" class="field font-mono" oninput="formatCardNumber(this)" />
+          <p class="text-[10px] text-amber-700 mt-1">
+            <i class="fa-solid fa-shield-halved"></i> Tam numara DB'ye kaydedilmez. Sadece son 4 hane saklanır.
+          </p>
+        </div>
+
+        <div class="flex gap-2 mt-5">
+          <button type="button" onclick="closePaymentInfoModal()" class="flex-1 py-3 bg-slate-100 text-slate-700 font-bold text-sm rounded-xl hover:bg-slate-200 transition">İptal</button>
+          <button type="submit" class="flex-1 py-3 bg-blue-600 text-white font-bold text-sm rounded-xl hover:bg-blue-700 transition shadow-md">Kaydet</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- BAKİYE YÜKLE MODAL -->
+  <div id="deposit-modal" class="fixed inset-0 z-[100] flex items-center justify-center modal-overlay">
+    <div class="absolute inset-0 bg-slate-900/60" onclick="closeDepositModal()"></div>
+    <div class="bg-white rounded-[2rem] w-[92%] max-w-md p-6 relative z-10 modal-content shadow-2xl">
+      <h2 class="text-lg font-extrabold text-slate-900 mb-1">Bakiye Yükle</h2>
+      <p class="text-xs text-slate-500 mb-5">Kayıtlı kartından bakiyene para ekle.</p>
+
+      <div class="grid grid-cols-3 gap-2 mb-4">
+        <button type="button" onclick="setDepositAmount(50)" class="quick-amt py-2 bg-slate-100 text-slate-700 font-bold text-sm rounded-xl hover:bg-blue-50 hover:text-blue-700 transition">50 ₺</button>
+        <button type="button" onclick="setDepositAmount(100)" class="quick-amt py-2 bg-slate-100 text-slate-700 font-bold text-sm rounded-xl hover:bg-blue-50 hover:text-blue-700 transition">100 ₺</button>
+        <button type="button" onclick="setDepositAmount(250)" class="quick-amt py-2 bg-slate-100 text-slate-700 font-bold text-sm rounded-xl hover:bg-blue-50 hover:text-blue-700 transition">250 ₺</button>
+        <button type="button" onclick="setDepositAmount(500)" class="quick-amt py-2 bg-slate-100 text-slate-700 font-bold text-sm rounded-xl hover:bg-blue-50 hover:text-blue-700 transition">500 ₺</button>
+        <button type="button" onclick="setDepositAmount(1000)" class="quick-amt py-2 bg-slate-100 text-slate-700 font-bold text-sm rounded-xl hover:bg-blue-50 hover:text-blue-700 transition">1.000 ₺</button>
+        <button type="button" onclick="setDepositAmount(2500)" class="quick-amt py-2 bg-slate-100 text-slate-700 font-bold text-sm rounded-xl hover:bg-blue-50 hover:text-blue-700 transition">2.500 ₺</button>
+      </div>
+
+      <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Tutar (₺)</label>
+      <input id="deposit-amount" type="number" min="10" max="10000" step="10" class="field text-2xl font-black text-center" placeholder="0" />
+      <p class="text-[10px] text-slate-400 mt-1 mb-4">Min: 10 ₺ — Max: 10.000 ₺</p>
+
+      <div class="bg-amber-50 border border-amber-100 rounded-xl p-3 mb-4 text-[11px] text-amber-800">
+        <i class="fa-solid fa-circle-info mr-1"></i>
+        <strong>Demo modu:</strong> Şu an gerçek kart kesimi yapılmıyor. Gerçek ödeme için iyzico/PayTR entegrasyonu gerekli.
+      </div>
+
+      <div class="flex gap-2">
+        <button onclick="closeDepositModal()" class="flex-1 py-3 bg-slate-100 text-slate-700 font-bold text-sm rounded-xl hover:bg-slate-200 transition">İptal</button>
+        <button onclick="submitDeposit()" id="deposit-btn" class="flex-1 py-3 bg-blue-600 text-white font-bold text-sm rounded-xl hover:bg-blue-700 transition shadow-md">
+          <i class="fa-solid fa-credit-card mr-1"></i> Yükle
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PARA ÇEK MODAL -->
+  <div id="withdraw-modal" class="fixed inset-0 z-[100] flex items-center justify-center modal-overlay">
+    <div class="absolute inset-0 bg-slate-900/60" onclick="closeWithdrawModal()"></div>
+    <div class="bg-white rounded-[2rem] w-[92%] max-w-md p-6 relative z-10 modal-content shadow-2xl">
+      <h2 class="text-lg font-extrabold text-slate-900 mb-1">Para Çek</h2>
+      <p class="text-xs text-slate-500 mb-5">Talebin admin onayından sonra IBAN'ına gönderilir.</p>
+
+      <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Tutar (₺)</label>
+      <input id="withdraw-amount" type="number" min="100" step="50" class="field text-2xl font-black text-center" placeholder="0" />
+      <p class="text-[10px] text-slate-400 mt-1 mb-4">Min: 100 ₺ — Mevcut: <span id="available-balance">0</span> ₺</p>
+
+      <div class="bg-blue-50 border border-blue-100 rounded-xl p-3 mb-4 text-[11px] text-blue-800">
+        <i class="fa-solid fa-clock mr-1"></i>
+        Çekim talebin 1-3 iş günü içinde IBAN'ına aktarılır.
+      </div>
+
+      <div class="flex gap-2">
+        <button onclick="closeWithdrawModal()" class="flex-1 py-3 bg-slate-100 text-slate-700 font-bold text-sm rounded-xl hover:bg-slate-200 transition">İptal</button>
+        <button onclick="submitWithdraw()" id="withdraw-btn" class="flex-1 py-3 bg-emerald-600 text-white font-bold text-sm rounded-xl hover:bg-emerald-700 transition shadow-md">
+          <i class="fa-solid fa-paper-plane mr-1"></i> Talep Oluştur
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    let walletData = null;
+
+    function fmt(v) { return new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(parseFloat(v||0)); }
+
+    async function loadWallet() {
+      try {
+        walletData = await apiGet('/api/payment/wallet');
+        document.getElementById('wallet-balance').textContent = fmt(walletData.wallet_balance);
+        document.getElementById('pending-balance').textContent = fmt(walletData.pending_balance);
+        document.getElementById('total-earnings').textContent = fmt(walletData.total_earnings);
+        document.getElementById('available-balance').textContent = fmt(walletData.wallet_balance);
+
+        // Kart
+        const p = walletData.payment_info;
+        if (p.has_card) {
+          document.getElementById('card-brand').textContent = p.card_brand || 'KART';
+          document.getElementById('card-number').textContent = '•••• •••• •••• ' + p.card_last4;
+          document.getElementById('card-name').textContent = p.card_holder || '—';
+        }
+        // IBAN
+        document.getElementById('iban-display').textContent = p.iban || 'Henüz eklenmedi';
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function loadTransactions() {
+      try {
+        const txs = await apiGet('/api/payment/transactions');
+        const el = document.getElementById('transactions-list');
+        if (txs.length === 0) {
+          el.innerHTML = `<p class="text-sm text-slate-400 text-center py-8">Henüz işlem yok.</p>`;
+          return;
+        }
+        const typeMap = {
+          deposit:       { icon: 'fa-arrow-down', cls: 'bg-emerald-50 text-emerald-600', label: 'Bakiye Yükleme' },
+          withdrawal:    { icon: 'fa-arrow-up',   cls: 'bg-rose-50 text-rose-600',       label: 'Para Çekme' },
+          commission:    { icon: 'fa-percent',    cls: 'bg-amber-50 text-amber-600',     label: 'Komisyon' },
+          job_payment:   { icon: 'fa-briefcase',  cls: 'bg-blue-50 text-blue-600',       label: 'İş Ödemesi' },
+          job_earning:   { icon: 'fa-money-bill', cls: 'bg-emerald-50 text-emerald-600', label: 'İş Kazancı' },
+          survey_reward: { icon: 'fa-clipboard',  cls: 'bg-purple-50 text-purple-600',   label: 'Anket Ödülü' },
+          refund:        { icon: 'fa-rotate-left',cls: 'bg-slate-50 text-slate-600',     label: 'İade' },
+          admin_credit:  { icon: 'fa-gift',       cls: 'bg-pink-50 text-pink-600',       label: 'Admin Kredisi' }
+        };
+        el.innerHTML = txs.map(t => {
+          const info = typeMap[t.type] || { icon:'fa-circle', cls:'bg-slate-50 text-slate-600', label:t.type };
+          const amt = parseFloat(t.amount);
+          const sign = amt > 0 ? '+' : '';
+          const color = amt > 0 ? 'text-emerald-600' : 'text-rose-600';
+          const d = new Date(t.created_at);
+          return `
+            <div class="flex items-center gap-3 p-3 hover:bg-slate-50 rounded-xl transition">
+              <div class="tx-icon ${info.cls}"><i class="fa-solid ${info.icon}"></i></div>
+              <div class="flex-1 min-w-0">
+                <p class="font-bold text-sm text-slate-900">${info.label}</p>
+                <p class="text-[11px] text-slate-400 truncate">${t.note || '—'} · ${d.toLocaleDateString('tr-TR')} ${d.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'})}</p>
+              </div>
+              <div class="text-right">
+                <p class="font-extrabold ${color}">${sign}${fmt(amt)} ₺</p>
+                ${t.status === 'pending' ? '<p class="text-[10px] text-amber-600 font-bold">BEKLİYOR</p>' : ''}
+              </div>
+            </div>`;
+        }).join('');
+      } catch (err) {
+        document.getElementById('transactions-list').innerHTML = `<p class="text-sm text-rose-500 text-center py-4">${err.message}</p>`;
+      }
+    }
+
+    // ════════════════════════════════════════════
+    // ÖDEME BİLGİLERİ MODAL
+    // ════════════════════════════════════════════
+    function openPaymentInfoModal() {
+      document.getElementById('form-iban').value = walletData?.payment_info?.iban?.replace(/\s/g,'').replace(/\*/g,'') || '';
+      document.getElementById('form-cardholder').value = walletData?.payment_info?.card_holder || '';
+      document.getElementById('form-cardnumber').value = walletData?.payment_info?.card_last4 ? '**** **** **** ' + walletData.payment_info.card_last4 : '';
+      document.getElementById('payment-info-modal').classList.add('modal-active');
+      document.body.style.overflow = 'hidden';
+    }
+    function closePaymentInfoModal() {
+      document.getElementById('payment-info-modal').classList.remove('modal-active');
+      document.body.style.overflow = '';
+    }
+    function formatCardNumber(input) {
+      let v = input.value.replace(/\s/g, '').replace(/\*/g, '');
+      v = v.replace(/(.{4})/g, '$1 ').trim();
+      input.value = v;
+    }
+    async function savePaymentInfo(e) {
+      e.preventDefault();
+      const iban = document.getElementById('form-iban').value.trim();
+      const card_holder = document.getElementById('form-cardholder').value.trim();
+      let card_number = document.getElementById('form-cardnumber').value.replace(/\s/g,'').replace(/\*/g,'');
+      // Eğer hala maskeliyse (sadece son 4 hane) gönderme
+      if (card_number.length < 13) card_number = undefined;
+
+      const payload = {};
+      if (iban !== undefined) payload.iban = iban;
+      if (card_holder !== undefined) payload.card_holder = card_holder;
+      if (card_number !== undefined) payload.card_number = card_number;
+
+      try {
+        await apiPut('/api/payment/payment-info', payload);
+        showToast('Bilgiler güncellendi.');
+        closePaymentInfoModal();
+        loadWallet();
+      } catch (err) { showToast(err.message, 'error'); }
+    }
+
+    // ════════════════════════════════════════════
+    // BAKİYE YÜKLE
+    // ════════════════════════════════════════════
+    function openDepositModal() {
+      if (!walletData?.payment_info?.has_card) {
+        if (confirm('Önce kart eklemelisin. Şimdi eklemek ister misin?')) openPaymentInfoModal();
+        return;
+      }
+      document.getElementById('deposit-amount').value = '';
+      document.getElementById('deposit-modal').classList.add('modal-active');
+      document.body.style.overflow = 'hidden';
+    }
+    function closeDepositModal() {
+      document.getElementById('deposit-modal').classList.remove('modal-active');
+      document.body.style.overflow = '';
+    }
+    function setDepositAmount(amt) {
+      document.getElementById('deposit-amount').value = amt;
+    }
+    async function submitDeposit() {
+      const amt = parseFloat(document.getElementById('deposit-amount').value);
+      if (!amt || amt < 10) return showToast('Minimum 10 ₺', 'error');
+      const btn = document.getElementById('deposit-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> İşleniyor...';
+      try {
+        const r = await apiPost('/api/payment/deposit', { amount: amt });
+        showToast(amt + ' ₺ bakiyene eklendi! 🎉');
+        closeDepositModal();
+        loadWallet();
+        loadTransactions();
+      } catch (err) { showToast(err.message, 'error'); }
+      finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-credit-card mr-1"></i> Yükle';
+      }
+    }
+
+    // ════════════════════════════════════════════
+    // PARA ÇEK
+    // ════════════════════════════════════════════
+    function openWithdrawModal() {
+      if (!walletData?.payment_info?.has_iban) {
+        if (confirm('Önce IBAN eklemelisin. Şimdi eklemek ister misin?')) openPaymentInfoModal();
+        return;
+      }
+      if (walletData.wallet_balance < 100) {
+        return showToast('Para çekmek için en az 100 ₺ bakiye gerekli.', 'error');
+      }
+      document.getElementById('withdraw-amount').value = '';
+      document.getElementById('withdraw-modal').classList.add('modal-active');
+      document.body.style.overflow = 'hidden';
+    }
+    function closeWithdrawModal() {
+      document.getElementById('withdraw-modal').classList.remove('modal-active');
+      document.body.style.overflow = '';
+    }
+    async function submitWithdraw() {
+      const amt = parseFloat(document.getElementById('withdraw-amount').value);
+      if (!amt || amt < 100) return showToast('Minimum 100 ₺', 'error');
+      if (amt > walletData.wallet_balance) return showToast('Yetersiz bakiye', 'error');
+      const btn = document.getElementById('withdraw-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Gönderiliyor...';
+      try {
+        await apiPost('/api/payment/withdraw', { amount: amt });
+        showToast('Çekim talebin oluşturuldu! Admin onayından sonra IBAN\'ına gönderilir.');
+        closeWithdrawModal();
+        loadWallet();
+        loadTransactions();
+      } catch (err) { showToast(err.message, 'error'); }
+      finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-paper-plane mr-1"></i> Talep Oluştur';
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      const me = await loadHeaderUser();
+      if (!me) { window.location.href = 'giris.html?redirect=cuzdan.html'; return; }
+      loadWallet();
+      loadTransactions();
+    });
+  </script>
+</body>
+</html>

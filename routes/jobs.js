@@ -155,44 +155,71 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Bir ilana başvur (+ takvime otomatik kırmızı event ekle)
+// Bir ilana başvur (+ takvime otomatik kırmızı event ekle + 50₺ komisyon kes)
 router.post('/:id/apply', async (req, res) => {
+  const conn = await db.getConnection();
   try {
+    await conn.beginTransaction();
     const uid = currentUserId(req);
+    if (!req.session.userId) {
+      await conn.rollback();
+      return res.status(401).json({ error: 'Başvurmak için giriş yapmalısın' });
+    }
+
     const { cover_message } = req.body;
-    await db.query(
+
+    // Daha önce başvurmuş mu kontrol et
+    const [existing] = await conn.query(
+      'SELECT id FROM applications WHERE job_id = ? AND worker_id = ?',
+      [req.params.id, uid]
+    );
+    if (existing.length > 0) {
+      await conn.rollback();
+      return res.status(409).json({ error: 'Zaten başvurdun' });
+    }
+
+    // 50₺ başvuru komisyonu kes (cüzdandan)
+    const payment = require('./payment');
+    try {
+      await payment.chargeApplicationFee(uid, req.params.id, conn);
+    } catch (feeErr) {
+      await conn.rollback();
+      return res.status(402).json({ error: feeErr.message, requires_topup: true });
+    }
+
+    // Başvuruyu oluştur
+    await conn.query(
       `INSERT INTO applications (job_id, worker_id, cover_message)
        VALUES (?, ?, ?)`,
       [req.params.id, uid, cover_message || null]
     );
-    await db.query('UPDATE jobs SET applicant_count = applicant_count + 1 WHERE id = ?', [req.params.id]);
+    await conn.query('UPDATE jobs SET applicant_count = applicant_count + 1 WHERE id = ?', [req.params.id]);
 
-    // Takvime otomatik kırmızı (rose) event ekle — pending durumu
-    try {
-      const [jobs] = await db.query(
-        'SELECT title, work_date, start_time FROM jobs WHERE id = ?',
-        [req.params.id]
+    // Takvime otomatik kırmızı (rose) event ekle
+    const [jobs] = await conn.query(
+      'SELECT title, work_date, start_time FROM jobs WHERE id = ?',
+      [req.params.id]
+    );
+    if (jobs.length > 0) {
+      const j = jobs[0];
+      await conn.query(`
+        INSERT INTO calendar_events (user_id, job_id, title, note, event_date, start_time, color, source)
+        VALUES (?, ?, ?, ?, ?, ?, 'rose', 'job')
+        ON DUPLICATE KEY UPDATE color='rose'`,
+        [uid, req.params.id, j.title, 'Başvuru bekleniyor', j.work_date, j.start_time || null]
       );
-      if (jobs.length > 0) {
-        const j = jobs[0];
-        await db.query(`
-          INSERT INTO calendar_events (user_id, job_id, title, note, event_date, start_time, color, source)
-          VALUES (?, ?, ?, ?, ?, ?, 'rose', 'job')
-          ON DUPLICATE KEY UPDATE color='rose'`,
-          [uid, req.params.id, j.title, 'Başvuru bekleniyor', j.work_date, j.start_time || null]
-        );
-      }
-    } catch (calErr) {
-      // Takvim ekleme başarısız olsa bile başvuru kabul edildi sayılır
-      console.error('Calendar event eklenemedi:', calErr.message);
     }
 
-    res.json({ success: true });
+    await conn.commit();
+    res.json({ success: true, fee_charged: payment.APPLICATION_FEE });
   } catch (err) {
+    await conn.rollback();
     if (err.code === 'ER_DUP_ENTRY') {
       return res.status(409).json({ error: 'Zaten başvurdun' });
     }
     res.status(500).json({ error: err.message });
+  } finally {
+    conn.release();
   }
 });
 

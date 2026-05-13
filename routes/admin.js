@@ -377,6 +377,143 @@ router.get('/contact-messages/unread-count', async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
+// PARA ÇEKME TALEPLERİ
+// ═══════════════════════════════════════════════════════════════════════════
+router.get('/withdrawals', async (req, res) => {
+  try {
+    const filter = req.query.filter || 'pending';
+    let sql = `
+      SELECT w.*, u.full_name, u.email, u.avatar_url
+      FROM withdrawal_requests w
+      JOIN users u ON u.id = w.user_id
+      WHERE 1=1`;
+    if (filter !== 'all') sql += ` AND w.status = ${db.escape(filter)}`;
+    sql += ' ORDER BY w.created_at DESC LIMIT 100';
+    const [rows] = await db.query(sql);
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/withdrawals/:id/approve', async (req, res) => {
+  const conn = await db.getConnection();
+  try {
+    await conn.beginTransaction();
+    const adminId = req.session.userId;
+    const [rows] = await conn.query('SELECT * FROM withdrawal_requests WHERE id = ?', [req.params.id]);
+    if (rows.length === 0) return res.status(404).json({ error: 'Talep yok' });
+    const w = rows[0];
+    if (w.status !== 'pending') return res.status(400).json({ error: 'Talep zaten işlenmiş' });
+
+    await conn.query(
+      "UPDATE withdrawal_requests SET status='paid', processed_at=NOW(), processed_by=? WHERE id=?",
+      [adminId, req.params.id]
+    );
+    await conn.query(
+      "UPDATE transactions SET status='completed' WHERE reference_type='withdrawal' AND reference_id=?",
+      [req.params.id]
+    );
+    await conn.query(`
+      INSERT INTO notifications (user_id, type, title, body, link_url)
+      VALUES (?, 'payment', '✓ Para çekme onaylandı', ?, '/profil.html')`,
+      [w.user_id, `${parseFloat(w.amount).toFixed(2)} ₺ IBAN'ına gönderildi.`]
+    );
+
+    await conn.commit();
+    res.json({ success: true });
+  } catch (err) {
+    await conn.rollback();
+    res.status(500).json({ error: err.message });
+  } finally {
+    conn.release();
+  }
+});
+
+router.post('/withdrawals/:id/reject', async (req, res) => {
+  const conn = await db.getConnection();
+  try {
+    await conn.beginTransaction();
+    const adminId = req.session.userId;
+    const { reason } = req.body;
+    const [rows] = await conn.query('SELECT * FROM withdrawal_requests WHERE id = ?', [req.params.id]);
+    if (rows.length === 0) return res.status(404).json({ error: 'Talep yok' });
+    const w = rows[0];
+    if (w.status !== 'pending') return res.status(400).json({ error: 'Talep zaten işlenmiş' });
+
+    // Bakiyeyi iade et
+    const [[u]] = await conn.query('SELECT wallet_balance FROM users WHERE id = ?', [w.user_id]);
+    const newBalance = parseFloat(u.wallet_balance) + parseFloat(w.amount);
+    await conn.query('UPDATE users SET wallet_balance = ? WHERE id = ?', [newBalance, w.user_id]);
+
+    await conn.query(
+      "UPDATE withdrawal_requests SET status='rejected', admin_note=?, processed_at=NOW(), processed_by=? WHERE id=?",
+      [reason || 'Reddedildi', adminId, req.params.id]
+    );
+    await conn.query(`
+      INSERT INTO transactions (user_id, type, amount, balance_after, status, reference_type, reference_id, note)
+      VALUES (?, 'refund', ?, ?, 'completed', 'withdrawal', ?, ?)`,
+      [w.user_id, w.amount, newBalance, req.params.id, 'Çekim talebi reddedildi — iade']
+    );
+    await conn.query(`
+      INSERT INTO notifications (user_id, type, title, body, link_url)
+      VALUES (?, 'payment', '✗ Para çekme reddedildi', ?, '/profil.html')`,
+      [w.user_id, `${parseFloat(w.amount).toFixed(2)} ₺ bakiyene iade edildi. Sebep: ${reason || 'Belirtilmedi'}`]
+    );
+
+    await conn.commit();
+    res.json({ success: true });
+  } catch (err) {
+    await conn.rollback();
+    res.status(500).json({ error: err.message });
+  } finally {
+    conn.release();
+  }
+});
+
+// Tüm işlem geçmişi (admin için)
+router.get('/transactions', async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT t.*, u.full_name, u.email
+      FROM transactions t JOIN users u ON u.id = t.user_id
+      ORDER BY t.created_at DESC LIMIT 200`);
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Manuel bakiye ekle (admin yetki)
+router.post('/users/:id/add-balance', async (req, res) => {
+  const conn = await db.getConnection();
+  try {
+    await conn.beginTransaction();
+    const { amount, note } = req.body;
+    const amt = parseFloat(amount);
+    if (!amt || isNaN(amt)) return res.status(400).json({ error: 'Geçersiz tutar' });
+
+    const [[u]] = await conn.query('SELECT wallet_balance FROM users WHERE id = ?', [req.params.id]);
+    if (!u) return res.status(404).json({ error: 'Kullanıcı yok' });
+    const newBalance = parseFloat(u.wallet_balance) + amt;
+    await conn.query('UPDATE users SET wallet_balance = ? WHERE id = ?', [newBalance, req.params.id]);
+    await conn.query(`
+      INSERT INTO transactions (user_id, type, amount, balance_after, status, reference_type, note)
+      VALUES (?, 'admin_credit', ?, ?, 'completed', 'manual', ?)`,
+      [req.params.id, amt, newBalance, note || 'Admin tarafından eklendi']
+    );
+
+    await conn.commit();
+    res.json({ success: true, new_balance: newBalance });
+  } catch (err) {
+    await conn.rollback();
+    res.status(500).json({ error: err.message });
+  } finally {
+    conn.release();
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
 // BİLDİRİM GÖNDERME (Broadcast)
 // POST /broadcast { audience: 'all'|'new_users'|'selected', user_ids?: [], title, body, link_url? }
 // ═══════════════════════════════════════════════════════════════════════════

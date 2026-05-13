@@ -88,6 +88,24 @@ async function loadHeaderUser() {
     // localStorage cache
     localStorage.setItem('gu_user', JSON.stringify(user));
 
+    // TÜM GİRİŞ YAPMIŞ KULLANICILAR İÇİN: Cüzdanım linki
+    document.querySelectorAll('button[onclick="logoutUser()"]').forEach(btn => {
+      const dropdown = btn.parentElement;
+      if (dropdown && !dropdown.querySelector('a[href="cuzdan.html"]')) {
+        const walletLink = document.createElement('a');
+        walletLink.href = 'cuzdan.html';
+        walletLink.className = 'block px-5 py-2.5 text-sm font-bold text-emerald-600 hover:bg-emerald-50 transition';
+        walletLink.innerHTML = '<i class="fa-solid fa-wallet mr-1.5"></i> Cüzdanım';
+        // Ayarlar linkinin üstüne ekle
+        const ayarlar = dropdown.querySelector('a[href="ayarlar.html"]');
+        if (ayarlar) {
+          dropdown.insertBefore(walletLink, ayarlar);
+        } else {
+          dropdown.insertBefore(walletLink, btn);
+        }
+      }
+    });
+
     // İŞVEREN ise: dropdown'a "İşveren Paneli" linki ekle
     if (user.role === 'employer') {
       document.querySelectorAll('button[onclick="logoutUser()"]').forEach(btn => {
