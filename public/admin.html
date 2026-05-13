@@ -1,0 +1,707 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <title>Günlükİş | Admin Panel</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme: { extend: { fontFamily: { sans: ["Plus Jakarta Sans", "sans-serif"] } } } };
+  </script>
+  <style>
+    body { background: #0f172a; color: #e2e8f0; -webkit-tap-highlight-color: transparent; }
+    .glass-nav { background: rgba(15,23,42,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(51,65,85,0.4); }
+    #toast-container { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); z-index:9999; display:flex; flex-direction:column; gap:10px; pointer-events:none; }
+    .toast { background:#1e293b; color:white; padding:12px 24px; border-radius:100px; font-size:14px; font-weight:600; box-shadow:0 10px 25px rgba(0,0,0,.3); opacity:0; transform:translateY(20px); transition:all 0.3s ease; border:1px solid #334155; }
+    .toast.show { opacity:1; transform:translateY(0); }
+    .tab-btn { padding: 10px 16px; font-size: 13px; font-weight: 700; color: #94a3b8; border-radius: 12px; transition: all 0.15s; white-space: nowrap; }
+    .tab-btn:hover { background: #1e293b; color: #e2e8f0; }
+    .tab-btn.active { background: #2563eb; color: white; box-shadow: 0 4px 12px rgba(37,99,235,.3); }
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 18px; }
+    .row { padding: 14px 16px; border-bottom: 1px solid #334155; display: flex; align-items: center; gap: 12px; transition: all 0.15s; }
+    .row:hover { background: #283548; }
+    .row:last-child { border-bottom: none; }
+    .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 999px; font-size: 10px; font-weight: 800; letter-spacing: 0.3px; }
+    .badge-red { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+    .badge-green { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
+    .badge-blue { background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); }
+    .badge-amber { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
+    .badge-purple { background: rgba(168,85,247,0.15); color: #c084fc; border: 1px solid rgba(168,85,247,0.3); }
+    .field { width: 100%; padding: 10px 14px; background: #0f172a; border: 1.5px solid #334155; border-radius: 10px; font-size: 13px; font-weight: 600; color: #e2e8f0; }
+    .field::placeholder { color: #64748b; }
+    .field:focus { outline: none; border-color: #2563eb; }
+    .btn-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; font-size: 13px; }
+    .btn-icon:hover { transform: scale(1.05); }
+    .btn-red { background: rgba(239,68,68,0.15); color: #f87171; }
+    .btn-red:hover { background: rgba(239,68,68,0.3); }
+    .btn-green { background: rgba(16,185,129,0.15); color: #34d399; }
+    .btn-green:hover { background: rgba(16,185,129,0.3); }
+    .btn-blue { background: rgba(59,130,246,0.15); color: #60a5fa; }
+    .btn-blue:hover { background: rgba(59,130,246,0.3); }
+    .btn-amber { background: rgba(245,158,11,0.15); color: #fbbf24; }
+    .btn-amber:hover { background: rgba(245,158,11,0.3); }
+    .modal-overlay { opacity: 0; visibility: hidden; transition: all 0.3s ease; backdrop-filter: blur(8px); }
+    .modal-content { transform: translateY(20px) scale(0.95); opacity: 0; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+    .modal-active .modal-overlay { opacity: 1; visibility: visible; }
+    .modal-active .modal-content { transform: translateY(0) scale(1); opacity: 1; }
+    .stat-card { background: linear-gradient(135deg, #1e293b, #2a3650); border: 1px solid #334155; border-radius: 18px; padding: 18px; transition: all 0.2s; }
+    .stat-card:hover { transform: translateY(-2px); border-color: #475569; }
+    table { width: 100%; }
+    th { text-align: left; padding: 12px 14px; font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #334155; }
+    td { padding: 14px; border-bottom: 1px solid #334155; font-size: 13px; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover { background: #283548; }
+    .gold { color: #fbbf24; }
+    .silver { color: #cbd5e1; }
+    .bronze { color: #d97706; }
+  </style>
+</head>
+<body class="font-sans antialiased pb-16">
+
+  <!-- HEADER -->
+  <header class="fixed top-0 left-0 right-0 z-50 glass-nav">
+    <div class="max-w-7xl mx-auto px-4 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <a href="index.html" class="flex items-center gap-3">
+          <div class="bg-gradient-to-br from-blue-500 to-purple-600 p-2 rounded-xl shadow-lg shadow-blue-500/30">
+            <i class="fa-solid fa-shield-halved text-white text-sm"></i>
+          </div>
+          <div>
+            <div class="text-base font-extrabold text-white">Admin Panel</div>
+            <div class="text-[10px] font-bold text-slate-400 tracking-wider uppercase">Günlükİş Yönetim</div>
+          </div>
+        </a>
+        <div class="flex items-center gap-3">
+          <span class="hidden md:inline-flex items-center gap-1.5 bg-rose-500/10 text-rose-400 border border-rose-500/30 px-3 py-1.5 rounded-full text-[10px] font-bold">
+            <span class="w-1.5 h-1.5 bg-rose-400 rounded-full animate-pulse"></span> ADMIN MODU
+          </span>
+          <a href="index.html" class="text-xs font-bold text-slate-400 hover:text-white transition">
+            <i class="fa-solid fa-arrow-left mr-1"></i> Siteye Dön
+          </a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="pt-20 px-4 lg:px-8 max-w-7xl mx-auto">
+
+    <!-- ERİŞİM REDDEDİLDİ EKRANI -->
+    <div id="access-denied" class="hidden text-center py-24">
+      <div class="w-20 h-20 bg-rose-500/10 text-rose-400 rounded-full flex items-center justify-center mx-auto mb-5 border border-rose-500/30">
+        <i class="fa-solid fa-lock text-3xl"></i>
+      </div>
+      <h2 class="text-2xl font-extrabold text-white mb-2">Erişim Reddedildi</h2>
+      <p class="text-slate-400 text-sm mb-6">Bu sayfayı görüntülemek için admin yetkisine sahip olmalısın.</p>
+      <a href="index.html" class="inline-block bg-blue-600 text-white font-bold px-6 py-3 rounded-xl hover:bg-blue-700 transition text-sm">
+        Ana Sayfaya Dön
+      </a>
+    </div>
+
+    <!-- ANA İÇERİK -->
+    <div id="admin-content" class="hidden">
+
+      <!-- TABS -->
+      <div class="flex items-center gap-2 mb-6 overflow-x-auto pb-2">
+        <button class="tab-btn active" data-tab="dashboard" onclick="switchTab(this)">
+          <i class="fa-solid fa-chart-pie mr-1"></i> Dashboard
+        </button>
+        <button class="tab-btn" data-tab="users" onclick="switchTab(this)">
+          <i class="fa-solid fa-users mr-1"></i> Kullanıcılar
+        </button>
+        <button class="tab-btn" data-tab="jobs" onclick="switchTab(this)">
+          <i class="fa-solid fa-briefcase mr-1"></i> İlanlar
+        </button>
+        <button class="tab-btn" data-tab="surveys" onclick="switchTab(this)">
+          <i class="fa-solid fa-clipboard-question mr-1"></i> Anketler
+        </button>
+        <button class="tab-btn" data-tab="applications" onclick="switchTab(this)">
+          <i class="fa-solid fa-paper-plane mr-1"></i> Başvurular
+        </button>
+        <button class="tab-btn" data-tab="scores" onclick="switchTab(this)">
+          <i class="fa-solid fa-trophy mr-1"></i> Puanlar
+        </button>
+      </div>
+
+      <!-- ─── DASHBOARD ─── -->
+      <div id="tab-dashboard" class="tab-pane">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div class="stat-card">
+            <div class="flex items-center justify-between mb-2">
+              <div class="w-10 h-10 bg-blue-500/20 text-blue-400 rounded-xl flex items-center justify-center">
+                <i class="fa-solid fa-users"></i>
+              </div>
+              <span class="text-[10px] font-bold text-emerald-400" id="stat-new-users">+0 bugün</span>
+            </div>
+            <div class="text-3xl font-black text-white" id="stat-users">0</div>
+            <div class="text-xs font-bold text-slate-400 mt-1">Toplam Kullanıcı</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="flex items-center justify-between mb-2">
+              <div class="w-10 h-10 bg-purple-500/20 text-purple-400 rounded-xl flex items-center justify-center">
+                <i class="fa-solid fa-briefcase"></i>
+              </div>
+              <span class="text-[10px] font-bold text-emerald-400" id="stat-new-jobs">+0 bugün</span>
+            </div>
+            <div class="text-3xl font-black text-white" id="stat-jobs">0</div>
+            <div class="text-xs font-bold text-slate-400 mt-1">Aktif İlan</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="flex items-center justify-between mb-2">
+              <div class="w-10 h-10 bg-amber-500/20 text-amber-400 rounded-xl flex items-center justify-center">
+                <i class="fa-solid fa-clipboard-question"></i>
+              </div>
+            </div>
+            <div class="text-3xl font-black text-white" id="stat-surveys">0</div>
+            <div class="text-xs font-bold text-slate-400 mt-1">Aktif Anket</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="flex items-center justify-between mb-2">
+              <div class="w-10 h-10 bg-emerald-500/20 text-emerald-400 rounded-xl flex items-center justify-center">
+                <i class="fa-solid fa-paper-plane"></i>
+              </div>
+            </div>
+            <div class="text-3xl font-black text-white" id="stat-apps">0</div>
+            <div class="text-xs font-bold text-slate-400 mt-1">Toplam Başvuru</div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div class="card p-5">
+            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">İş İlanı Bütçeleri</h3>
+            <div class="text-3xl font-black text-white"><span id="stat-budget">0</span> <span class="text-base text-slate-400">₺</span></div>
+            <p class="text-xs text-slate-500 mt-2">Yayınlanan & tamamlanan ilanlar toplamı</p>
+          </div>
+          <div class="card p-5">
+            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Anket Ödülü Dağıtılan</h3>
+            <div class="text-3xl font-black text-white"><span id="stat-survey-reward">0</span> <span class="text-base text-slate-400">₺</span></div>
+            <p class="text-xs text-slate-500 mt-2">Kullanıcılara verilen ödüller</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-4">
+          <div class="card p-5">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-xs font-bold text-slate-400 uppercase">Banlanan</p>
+                <p class="text-2xl font-black text-rose-400 mt-1" id="stat-banned">0</p>
+              </div>
+              <i class="fa-solid fa-ban text-2xl text-rose-400/30"></i>
+            </div>
+          </div>
+          <div class="card p-5">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-xs font-bold text-slate-400 uppercase">Admin Sayısı</p>
+                <p class="text-2xl font-black text-purple-400 mt-1" id="stat-admins">0</p>
+              </div>
+              <i class="fa-solid fa-shield-halved text-2xl text-purple-400/30"></i>
+            </div>
+          </div>
+          <div class="card p-5">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-xs font-bold text-slate-400 uppercase">Tüm İlanlar</p>
+                <p class="text-2xl font-black text-blue-400 mt-1" id="stat-jobs-all">0</p>
+              </div>
+              <i class="fa-solid fa-layer-group text-2xl text-blue-400/30"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── KULLANICILAR ─── -->
+      <div id="tab-users" class="tab-pane hidden">
+        <div class="card p-4 mb-4 flex flex-col md:flex-row gap-3">
+          <input type="text" id="users-search" oninput="loadUsers()" placeholder="İsim veya e-posta ara..." class="field flex-1" />
+          <select id="users-filter" onchange="loadUsers()" class="field md:w-48">
+            <option value="all">Tüm Kullanıcılar</option>
+            <option value="online">Çevrimiçi</option>
+            <option value="banned">Banlanmış</option>
+            <option value="admin">Adminler</option>
+          </select>
+        </div>
+        <div class="card overflow-x-auto">
+          <table id="users-table">
+            <thead><tr>
+              <th>Kullanıcı</th><th class="hidden md:table-cell">E-posta</th>
+              <th class="hidden md:table-cell">Rol</th><th>Puan</th>
+              <th class="hidden md:table-cell">İstatistik</th><th>İşlemler</th>
+            </tr></thead>
+            <tbody id="users-tbody"><tr><td colspan="6" class="text-center text-slate-400 py-8">Yükleniyor...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ─── İLANLAR ─── -->
+      <div id="tab-jobs" class="tab-pane hidden">
+        <div class="card p-4 mb-4">
+          <input type="text" id="jobs-search" oninput="loadJobs()" placeholder="İlan veya işveren ara..." class="field" />
+        </div>
+        <div class="card overflow-x-auto">
+          <table id="jobs-table">
+            <thead><tr>
+              <th>İlan</th><th class="hidden md:table-cell">İşveren</th>
+              <th class="hidden md:table-cell">Bütçe</th><th class="hidden md:table-cell">Tarih</th>
+              <th>Başvuru</th><th>İşlem</th>
+            </tr></thead>
+            <tbody id="jobs-tbody"><tr><td colspan="6" class="text-center text-slate-400 py-8">Yükleniyor...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ─── ANKETLER ─── -->
+      <div id="tab-surveys" class="tab-pane hidden">
+        <div class="card p-4 mb-4">
+          <input type="text" id="surveys-search" oninput="loadSurveys()" placeholder="Anket veya kullanıcı ara..." class="field" />
+        </div>
+        <div class="card overflow-x-auto">
+          <table id="surveys-table">
+            <thead><tr>
+              <th>Anket</th><th class="hidden md:table-cell">Oluşturan</th>
+              <th class="hidden md:table-cell">Ödül</th><th class="hidden md:table-cell">Soru</th>
+              <th>Yanıt</th><th>Durum</th><th>İşlem</th>
+            </tr></thead>
+            <tbody id="surveys-tbody"><tr><td colspan="7" class="text-center text-slate-400 py-8">Yükleniyor...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ─── BAŞVURULAR ─── -->
+      <div id="tab-applications" class="tab-pane hidden">
+        <div class="card overflow-x-auto">
+          <table>
+            <thead><tr>
+              <th>İlan</th><th>İşçi</th>
+              <th class="hidden md:table-cell">İşveren</th><th class="hidden md:table-cell">Bütçe</th>
+              <th>Durum</th><th class="hidden md:table-cell">Tarih</th>
+            </tr></thead>
+            <tbody id="apps-tbody"><tr><td colspan="6" class="text-center text-slate-400 py-8">Yükleniyor...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ─── PUANLAR (Sadece sen görebilirsin) ─── -->
+      <div id="tab-scores" class="tab-pane hidden">
+        <div class="card p-5 mb-4 bg-gradient-to-br from-amber-500/10 to-rose-500/10 border-amber-500/30">
+          <div class="flex items-center gap-3">
+            <i class="fa-solid fa-trophy text-2xl text-amber-400"></i>
+            <div>
+              <h3 class="font-extrabold text-white">Kullanıcı Sıralaması</h3>
+              <p class="text-xs text-slate-400 mt-0.5">Sadece adminlerin görebileceği özel sıralama tablosu. Puana göre sıralı.</p>
+            </div>
+          </div>
+        </div>
+        <div class="card overflow-x-auto">
+          <table>
+            <thead><tr>
+              <th class="w-10">#</th><th>Kullanıcı</th>
+              <th>Puan</th><th class="hidden md:table-cell">Kazanç</th>
+              <th class="hidden md:table-cell">Anket</th><th class="hidden md:table-cell">İş</th>
+            </tr></thead>
+            <tbody id="scores-tbody"><tr><td colspan="6" class="text-center text-slate-400 py-8">Yükleniyor...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- BAN MODAL -->
+  <div id="ban-modal" class="fixed inset-0 z-[100] flex items-center justify-center modal-overlay">
+    <div class="absolute inset-0 bg-black/70" onclick="closeBanModal()"></div>
+    <div class="card relative z-10 modal-content w-[90%] max-w-md p-6">
+      <h3 class="text-lg font-extrabold text-white mb-1">Kullanıcıyı Banla</h3>
+      <p class="text-xs text-slate-400 mb-4" id="ban-modal-user">—</p>
+      <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Sebep</label>
+      <textarea id="ban-reason" rows="3" placeholder="Örn: Spam, hakaret, dolandırıcılık..."
+        class="field resize-none mb-4"></textarea>
+      <div class="flex gap-2">
+        <button onclick="closeBanModal()" class="flex-1 py-3 bg-slate-700 text-white font-bold text-sm rounded-xl hover:bg-slate-600 transition">İptal</button>
+        <button onclick="confirmBan()" class="flex-1 py-3 bg-rose-600 text-white font-bold text-sm rounded-xl hover:bg-rose-700 transition">
+          <i class="fa-solid fa-ban mr-1"></i> Banla
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    let currentBanTargetId = null;
+
+    function escapeHtml(s) {
+      return (s == null ? '' : String(s)).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    function fmtMoney(v) { return new Intl.NumberFormat('tr-TR').format(parseFloat(v || 0)); }
+    function fmtDate(d) {
+      if (!d) return '—';
+      const date = new Date(d);
+      return date.toLocaleDateString('tr-TR', { day: '2-digit', month: 'short', year: 'numeric' });
+    }
+
+    // ════════════════════════════════════════════
+    // TAB GEÇİŞİ
+    // ════════════════════════════════════════════
+    function switchTab(btn) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const tabId = btn.dataset.tab;
+      document.querySelectorAll('.tab-pane').forEach(p => p.classList.add('hidden'));
+      document.getElementById('tab-' + tabId).classList.remove('hidden');
+
+      // İlk açılışta veri yükle
+      if (tabId === 'dashboard') loadDashboard();
+      if (tabId === 'users') loadUsers();
+      if (tabId === 'jobs') loadJobs();
+      if (tabId === 'surveys') loadSurveys();
+      if (tabId === 'applications') loadApplications();
+      if (tabId === 'scores') loadScores();
+    }
+
+    // ════════════════════════════════════════════
+    // DASHBOARD
+    // ════════════════════════════════════════════
+    async function loadDashboard() {
+      try {
+        const d = await apiGet('/api/admin/dashboard');
+        document.getElementById('stat-users').textContent = d.users;
+        document.getElementById('stat-jobs').textContent = d.active_jobs;
+        document.getElementById('stat-jobs-all').textContent = d.total_jobs;
+        document.getElementById('stat-surveys').textContent = d.active_surveys;
+        document.getElementById('stat-apps').textContent = d.applications;
+        document.getElementById('stat-budget').textContent = fmtMoney(d.total_job_budget);
+        document.getElementById('stat-survey-reward').textContent = fmtMoney(d.total_survey_rewards);
+        document.getElementById('stat-banned').textContent = d.banned;
+        document.getElementById('stat-admins').textContent = d.admins;
+        document.getElementById('stat-new-users').textContent = '+' + d.new_users_today + ' bugün';
+        document.getElementById('stat-new-jobs').textContent = '+' + d.new_jobs_today + ' bugün';
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    // ════════════════════════════════════════════
+    // KULLANICILAR
+    // ════════════════════════════════════════════
+    async function loadUsers() {
+      const q = document.getElementById('users-search').value.trim();
+      const filter = document.getElementById('users-filter').value;
+      const tbody = document.getElementById('users-tbody');
+      try {
+        const users = await apiGet(`/api/admin/users?q=${encodeURIComponent(q)}&filter=${filter}`);
+        if (users.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" class="text-center text-slate-400 py-8">Sonuç yok.</td></tr>';
+          return;
+        }
+        tbody.innerHTML = users.map(u => {
+          const badges = [];
+          if (u.is_admin) badges.push('<span class="badge badge-purple"><i class="fa-solid fa-shield-halved"></i> Admin</span>');
+          if (u.is_banned) badges.push('<span class="badge badge-red"><i class="fa-solid fa-ban"></i> Banlı</span>');
+          if (u.is_verified) badges.push('<span class="badge badge-blue"><i class="fa-solid fa-check"></i> Onaylı</span>');
+          if (u.is_online) badges.push('<span class="badge badge-green">●  Online</span>');
+
+          return `
+            <tr>
+              <td>
+                <div class="flex items-center gap-3">
+                  <img src="${u.avatar_url || 'https://i.pravatar.cc/100?u=' + u.id}" class="w-9 h-9 rounded-full object-cover" />
+                  <div>
+                    <p class="font-bold text-white">${escapeHtml(u.full_name)}</p>
+                    <p class="text-[11px] text-slate-400">ID: ${u.id} · ${fmtDate(u.created_at)}</p>
+                  </div>
+                </div>
+              </td>
+              <td class="hidden md:table-cell text-slate-300">${escapeHtml(u.email)}</td>
+              <td class="hidden md:table-cell">
+                <div class="flex flex-wrap gap-1">${badges.join('') || `<span class="badge badge-blue">${u.role}</span>`}</div>
+              </td>
+              <td>
+                <span class="text-amber-400 font-bold"><i class="fa-solid fa-star text-xs"></i> ${parseFloat(u.rating_avg||0).toFixed(1)}</span>
+                <span class="text-[10px] text-slate-500">(${u.rating_count})</span>
+              </td>
+              <td class="hidden md:table-cell text-[11px] text-slate-400">
+                <div>${u.jobs_count} ilan · ${u.applications_count} başvuru</div>
+                <div>${u.surveys_completed} anket</div>
+              </td>
+              <td>
+                <div class="flex gap-1">
+                  ${u.is_banned
+                    ? `<button onclick="unbanUser(${u.id}, '${escapeHtml(u.full_name).replace(/'/g,"\\'")}')" class="btn-icon btn-green" title="Banı Kaldır"><i class="fa-solid fa-unlock"></i></button>`
+                    : `<button onclick="openBanModal(${u.id}, '${escapeHtml(u.full_name).replace(/'/g,"\\'")}')" class="btn-icon btn-red" title="Banla"><i class="fa-solid fa-ban"></i></button>`
+                  }
+                  <button onclick="toggleAdmin(${u.id}, ${u.is_admin})" class="btn-icon ${u.is_admin ? 'btn-amber' : 'btn-blue'}"
+                    title="${u.is_admin ? 'Admin yetkisini kaldır' : 'Admin yap'}">
+                    <i class="fa-solid fa-shield-halved"></i>
+                  </button>
+                  <a href="isveren-profil.html?id=${u.id}" target="_blank" class="btn-icon btn-blue" title="Profili Gör">
+                    <i class="fa-solid fa-eye"></i>
+                  </a>
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-rose-400 py-8">${escapeHtml(err.message)}</td></tr>`;
+      }
+    }
+
+    function openBanModal(id, name) {
+      currentBanTargetId = id;
+      document.getElementById('ban-modal-user').textContent = name;
+      document.getElementById('ban-reason').value = '';
+      document.getElementById('ban-modal').classList.add('modal-active');
+    }
+    function closeBanModal() {
+      document.getElementById('ban-modal').classList.remove('modal-active');
+      currentBanTargetId = null;
+    }
+    async function confirmBan() {
+      const reason = document.getElementById('ban-reason').value.trim();
+      try {
+        await apiPost('/api/admin/users/' + currentBanTargetId + '/ban', { reason });
+        showToast('Kullanıcı banlandı.');
+        closeBanModal();
+        loadUsers();
+      } catch (err) { showToast(err.message, 'error'); }
+    }
+    async function unbanUser(id, name) {
+      if (!confirm(`${name} kullanıcısının banını kaldırmak istediğine emin misin?`)) return;
+      try {
+        await apiPost('/api/admin/users/' + id + '/unban');
+        showToast('Ban kaldırıldı.');
+        loadUsers();
+      } catch (err) { showToast(err.message, 'error'); }
+    }
+    async function toggleAdmin(id, isCurrentlyAdmin) {
+      const action = isCurrentlyAdmin ? 'admin yetkisini kaldır' : 'ADMIN YAP';
+      if (!confirm(`Bu kullanıcının ${action}mak istediğine emin misin?`)) return;
+      try {
+        const r = await apiPost('/api/admin/users/' + id + '/toggle-admin');
+        showToast(r.is_admin ? 'Admin yapıldı 👑' : 'Admin yetkisi kaldırıldı');
+        loadUsers();
+      } catch (err) { showToast(err.message, 'error'); }
+    }
+
+    // ════════════════════════════════════════════
+    // İLANLAR
+    // ════════════════════════════════════════════
+    async function loadJobs() {
+      const q = document.getElementById('jobs-search').value.trim();
+      const tbody = document.getElementById('jobs-tbody');
+      try {
+        const jobs = await apiGet(`/api/admin/jobs?q=${encodeURIComponent(q)}`);
+        if (jobs.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" class="text-center text-slate-400 py-8">Sonuç yok.</td></tr>';
+          return;
+        }
+        tbody.innerHTML = jobs.map(j => `
+          <tr>
+            <td>
+              <a href="is-detay.html?id=${j.id}" target="_blank" class="font-bold text-white hover:text-blue-400 transition">${escapeHtml(j.title)}</a>
+              <p class="text-[10px] text-slate-400 mt-0.5">${escapeHtml(j.category_name)} · ${escapeHtml([j.district, j.city].filter(Boolean).join(', '))}</p>
+            </td>
+            <td class="hidden md:table-cell">
+              <div class="flex items-center gap-2">
+                <img src="${j.employer_avatar || 'https://i.pravatar.cc/100?u='+j.employer_id}" class="w-7 h-7 rounded-full" />
+                <span class="text-slate-300 text-xs">${escapeHtml(j.employer_name)}</span>
+              </div>
+            </td>
+            <td class="hidden md:table-cell text-amber-400 font-bold">${fmtMoney(j.budget)} ₺</td>
+            <td class="hidden md:table-cell text-slate-400 text-xs">${fmtDate(j.work_date)}</td>
+            <td><span class="badge badge-blue">${j.applicant_count} başvuru</span></td>
+            <td>
+              <button onclick="deleteJob(${j.id}, '${escapeHtml(j.title).replace(/'/g,"\\'")}')" class="btn-icon btn-red" title="Sil">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-rose-400 py-8">${escapeHtml(err.message)}</td></tr>`;
+      }
+    }
+    async function deleteJob(id, title) {
+      if (!confirm(`"${title}" ilanını kalıcı olarak silmek istediğine emin misin?`)) return;
+      try {
+        await apiDelete('/api/admin/jobs/' + id);
+        showToast('İlan silindi.');
+        loadJobs();
+      } catch (err) { showToast(err.message, 'error'); }
+    }
+
+    // ════════════════════════════════════════════
+    // ANKETLER
+    // ════════════════════════════════════════════
+    async function loadSurveys() {
+      const q = document.getElementById('surveys-search').value.trim();
+      const tbody = document.getElementById('surveys-tbody');
+      try {
+        const surveys = await apiGet(`/api/admin/surveys?q=${encodeURIComponent(q)}`);
+        if (surveys.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" class="text-center text-slate-400 py-8">Sonuç yok.</td></tr>';
+          return;
+        }
+        tbody.innerHTML = surveys.map(s => `
+          <tr>
+            <td>
+              <p class="font-bold text-white">${escapeHtml(s.title)}</p>
+              <p class="text-[10px] text-slate-400 mt-0.5">${escapeHtml(s.subtitle || '')}</p>
+            </td>
+            <td class="hidden md:table-cell">
+              <div class="flex items-center gap-2">
+                <img src="${s.employer_avatar || 'https://i.pravatar.cc/100?u='+s.employer_id}" class="w-7 h-7 rounded-full" />
+                <span class="text-slate-300 text-xs">${escapeHtml(s.employer_name)}</span>
+              </div>
+            </td>
+            <td class="hidden md:table-cell text-amber-400 font-bold">${s.reward_type === 'balance' ? fmtMoney(s.reward_amount) + ' ₺' : (s.reward_amount || 0) + ' puan'}</td>
+            <td class="hidden md:table-cell text-slate-400">${s.question_count}</td>
+            <td><span class="badge badge-blue">${s.response_count} yanıt</span></td>
+            <td>${s.is_mandatory ? '<span class="badge badge-red"><i class="fa-solid fa-shield-halved"></i> Zorunlu</span>' : '<span class="badge badge-green">Normal</span>'}</td>
+            <td>
+              <div class="flex gap-1">
+                <button onclick="toggleMandatory(${s.id})" class="btn-icon btn-amber" title="Zorunluluk değiştir">
+                  <i class="fa-solid fa-shield-halved"></i>
+                </button>
+                <button onclick="deleteSurvey(${s.id}, '${escapeHtml(s.title).replace(/'/g,"\\'")}')" class="btn-icon btn-red" title="Sil">
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center text-rose-400 py-8">${escapeHtml(err.message)}</td></tr>`;
+      }
+    }
+    async function deleteSurvey(id, title) {
+      if (!confirm(`"${title}" anketini silmek istediğine emin misin?`)) return;
+      try {
+        await apiDelete('/api/admin/surveys/' + id);
+        showToast('Anket silindi.');
+        loadSurveys();
+      } catch (err) { showToast(err.message, 'error'); }
+    }
+    async function toggleMandatory(id) {
+      try {
+        const r = await apiPost('/api/admin/surveys/' + id + '/toggle-mandatory');
+        showToast(r.is_mandatory ? 'Zorunlu yapıldı ⚠️' : 'Normal yapıldı');
+        loadSurveys();
+      } catch (err) { showToast(err.message, 'error'); }
+    }
+
+    // ════════════════════════════════════════════
+    // BAŞVURULAR
+    // ════════════════════════════════════════════
+    async function loadApplications() {
+      const tbody = document.getElementById('apps-tbody');
+      try {
+        const apps = await apiGet('/api/admin/applications');
+        if (apps.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" class="text-center text-slate-400 py-8">Başvuru yok.</td></tr>';
+          return;
+        }
+        const statusMap = {
+          pending:  ['badge-amber', 'Bekliyor'],
+          accepted: ['badge-green', 'Kabul'],
+          rejected: ['badge-red', 'Reddedildi'],
+          completed:['badge-blue', 'Tamamlandı'],
+          withdrawn:['badge-red', 'Geri Çekildi'],
+        };
+        tbody.innerHTML = apps.map(a => {
+          const [cls, lbl] = statusMap[a.status] || statusMap.pending;
+          return `
+            <tr>
+              <td><a href="is-detay.html?id=${a.job_id}" target="_blank" class="font-bold text-white hover:text-blue-400">${escapeHtml(a.job_title)}</a></td>
+              <td><a href="isveren-profil.html?id=${a.worker_id}" target="_blank" class="text-slate-300 hover:text-blue-400">${escapeHtml(a.worker_name)}</a></td>
+              <td class="hidden md:table-cell text-slate-400">${escapeHtml(a.employer_name)}</td>
+              <td class="hidden md:table-cell text-amber-400 font-bold">${fmtMoney(a.budget)} ₺</td>
+              <td><span class="badge ${cls}">${lbl}</span></td>
+              <td class="hidden md:table-cell text-slate-400 text-xs">${fmtDate(a.applied_at)}</td>
+            </tr>`;
+        }).join('');
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-rose-400 py-8">${escapeHtml(err.message)}</td></tr>`;
+      }
+    }
+
+    // ════════════════════════════════════════════
+    // PUANLAR (sıralama)
+    // ════════════════════════════════════════════
+    async function loadScores() {
+      const tbody = document.getElementById('scores-tbody');
+      try {
+        const list = await apiGet('/api/admin/scores');
+        if (list.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" class="text-center text-slate-400 py-8">Yok.</td></tr>';
+          return;
+        }
+        tbody.innerHTML = list.map((u, idx) => {
+          let medalClass = '';
+          let medalIcon = (idx + 1).toString();
+          if (idx === 0) { medalClass = 'gold'; medalIcon = '🥇'; }
+          else if (idx === 1) { medalClass = 'silver'; medalIcon = '🥈'; }
+          else if (idx === 2) { medalClass = 'bronze'; medalIcon = '🥉'; }
+
+          return `
+            <tr>
+              <td class="text-2xl font-black ${medalClass}">${medalIcon}</td>
+              <td>
+                <div class="flex items-center gap-3">
+                  <img src="${u.avatar_url || 'https://i.pravatar.cc/100?u=' + u.id}" class="w-9 h-9 rounded-full object-cover" />
+                  <div>
+                    <p class="font-bold text-white">${escapeHtml(u.full_name)}
+                      ${u.is_admin ? '<span class="badge badge-purple ml-1">Admin</span>' : ''}
+                      ${u.is_banned ? '<span class="badge badge-red ml-1">Banlı</span>' : ''}
+                    </p>
+                    <p class="text-[11px] text-slate-400">${escapeHtml(u.email)}</p>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <div class="text-amber-400 font-black text-base">
+                  <i class="fa-solid fa-star"></i> ${parseFloat(u.rating_avg||0).toFixed(1)}
+                </div>
+                <div class="text-[10px] text-slate-500">${u.rating_count} oy · ${u.profile_score || 0} puan</div>
+              </td>
+              <td class="hidden md:table-cell">
+                <div class="text-emerald-400 font-bold">${fmtMoney(u.total_earnings)} ₺</div>
+                <div class="text-[10px] text-slate-500">${fmtMoney(u.pending_balance)} ₺ beklemede</div>
+              </td>
+              <td class="hidden md:table-cell text-slate-300">${u.surveys_done || 0}</td>
+              <td class="hidden md:table-cell text-slate-300">${u.completed_jobs || 0} / ${u.jobs_count || 0}</td>
+            </tr>`;
+        }).join('');
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-rose-400 py-8">${escapeHtml(err.message)}</td></tr>`;
+      }
+    }
+
+    // ════════════════════════════════════════════
+    // INIT — Admin yetkisi kontrolü
+    // ════════════════════════════════════════════
+    window.addEventListener('DOMContentLoaded', async () => {
+      try {
+        const me = await apiGet('/api/auth/me');
+        if (!me || !me.is_admin) {
+          document.getElementById('access-denied').classList.remove('hidden');
+          return;
+        }
+        document.getElementById('admin-content').classList.remove('hidden');
+        loadDashboard();
+      } catch (err) {
+        document.getElementById('access-denied').classList.remove('hidden');
+      }
+    });
+  </script>
+</body>
+</html>

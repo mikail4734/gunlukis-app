@@ -87,6 +87,22 @@ async function loadHeaderUser() {
     if (nameEl) nameEl.textContent = user.full_name;
     // localStorage cache
     localStorage.setItem('gu_user', JSON.stringify(user));
+
+    // ADMIN ise: dropdown'a "Admin Panel" linki ekle
+    if (user.is_admin) {
+      document.querySelectorAll('button[onclick="logoutUser()"]').forEach(btn => {
+        // Aynı linki birden fazla ekleme
+        const dropdown = btn.parentElement;
+        if (dropdown && !dropdown.querySelector('a[href="admin.html"]')) {
+          const adminLink = document.createElement('a');
+          adminLink.href = 'admin.html';
+          adminLink.className = 'block px-5 py-2.5 text-sm font-bold text-purple-600 hover:bg-purple-50 transition';
+          adminLink.innerHTML = '<i class="fa-solid fa-shield-halved mr-1.5"></i> Admin Panel';
+          dropdown.insertBefore(adminLink, btn);
+        }
+      });
+    }
+
     return user;
   } catch {
     // Giriş yapılmamış → generic ikon göster + dropdown linklerini "giris.html" yap

@@ -96,6 +96,8 @@ router.post('/login', async (req, res) => {
     const ok = await bcrypt.compare(password, user.password_hash);
     if (!ok) return res.status(401).json({ error: 'Hatalı e-posta veya şifre' });
 
+    if (user.is_banned) return res.status(403).json({ error: 'Hesabın yasaklandı: ' + (user.ban_reason || 'Kural ihlali') });
+
     req.session.userId = user.id;
     await db.query('UPDATE users SET is_online=1, last_seen_at=NOW() WHERE id=?', [user.id]);
     res.json({
@@ -143,6 +145,7 @@ router.post('/google', async (req, res) => {
       }
     } else {
       user = rows[0];
+      if (user.is_banned) return res.status(403).json({ error: 'Hesabın yasaklandı: ' + (user.ban_reason || 'Kural ihlali') });
       // Avatar güncelle (yoksa)
       const newAvatar = user.avatar_url || picture;
       await db.query(
@@ -183,11 +186,18 @@ router.get('/me', async (req, res) => {
     if (!uid) return res.status(401).json({ error: 'Giriş yapılmamış' });
 
     const [rows] = await db.query(
-      `SELECT id, full_name, email, phone, role, title, avatar_url, city, district,
+      `SELECT id, full_name, email, phone, role, is_admin, is_banned, title, avatar_url, city, district,
               rating_avg, rating_count, total_earnings, pending_balance
        FROM users WHERE id=?`, [uid]
     );
     if (rows.length === 0) return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
+
+    // Eğer banlanmışsa otomatik çıkış
+    if (rows[0].is_banned) {
+      req.session.destroy(() => {});
+      return res.status(403).json({ error: 'Hesabın yasaklandı' });
+    }
+
     res.json(rows[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });

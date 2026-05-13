@@ -29,6 +29,7 @@ app.use('/api/calendar', require('./routes/calendar'));
 app.use('/api/surveys',  require('./routes/surveys'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/social',   require('./routes/social'));
+app.use('/api/admin',    require('./routes/admin'));
 
 // Sağlık kontrolü
 app.get('/api/health', (req, res) => res.json({ ok: true, time: new Date() }));
