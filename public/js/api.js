@@ -68,6 +68,11 @@ function formatBudget(amount) {
 
 // ─── Auth Yardımcıları ─────────────────────────────────────────────────────
 
+// Generic placeholder avatar (SVG data URI) — kullanıcı giriş yapmadıysa
+const GUEST_AVATAR = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="32" fill="#f1f5f9"/><circle cx="32" cy="26" r="11" fill="#cbd5e1"/><path d="M10 60c0-12 10-20 22-20s22 8 22 20" fill="#cbd5e1"/></svg>`
+);
+
 // Header'daki avatar + dropdown'u gerçek kullanıcı ile günceller
 async function loadHeaderUser() {
   try {
@@ -84,7 +89,22 @@ async function loadHeaderUser() {
     localStorage.setItem('gu_user', JSON.stringify(user));
     return user;
   } catch {
-    return null; // Giriş yapılmamış, sessizce geç
+    // Giriş yapılmamış → generic ikon göster + dropdown linklerini "giris.html" yap
+    document.querySelectorAll('#header-avatar, #header-avatar-m').forEach(el => {
+      el.src = GUEST_AVATAR;
+    });
+    // Dropdown linklerini değiştir (varsa)
+    document.querySelectorAll('a[href="profil.html"], a[href="ayarlar.html"], a[href^="profil.html#"]').forEach(a => {
+      a.setAttribute('href', 'giris.html');
+    });
+    // Çıkış butonunu "Giriş Yap"a çevir
+    document.querySelectorAll('button[onclick="logoutUser()"]').forEach(b => {
+      b.textContent = 'Giriş Yap';
+      b.setAttribute('onclick', "window.location='giris.html'");
+      b.classList.remove('text-red-500', 'hover:bg-red-50');
+      b.classList.add('text-blue-600', 'hover:bg-blue-50');
+    });
+    return null;
   }
 }
 

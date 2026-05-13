@@ -7,6 +7,10 @@ const currentUserId = (req) => req.session.userId || process.env.DEMO_USER_ID ||
 // Profil bilgileri (tüm sekmeler dahil)
 router.get('/:id?', async (req, res) => {
   try {
+    // Eğer URL'de id verilmemişse → giriş zorunlu
+    if (!req.params.id && !req.session.userId) {
+      return res.status(401).json({ error: 'Giriş yapılmamış' });
+    }
     const uid = req.params.id || currentUserId(req);
 
     const [users] = await db.query(`

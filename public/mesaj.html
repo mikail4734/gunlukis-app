@@ -3,6 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
     <title>Günlükİş | Mesajlar</title>
 
     <link
@@ -88,6 +90,21 @@
           transform: translateY(0);
         }
       }
+
+      /* Emoji Picker */
+      .emoji-tab { transition: all 0.15s; }
+      .emoji-tab.active { background: #eff6ff; transform: scale(1.1); }
+      .emoji-item {
+        font-size: 22px;
+        padding: 6px;
+        text-align: center;
+        cursor: pointer;
+        border-radius: 8px;
+        transition: all 0.1s;
+        user-select: none;
+        line-height: 1;
+      }
+      .emoji-item:hover { background: #f1f5f9; transform: scale(1.2); }
     </style>
   </head>
   <body class="text-slate-800 antialiased selection:bg-blue-200">
@@ -403,12 +420,31 @@
                 oninput="autoResize(this)"
                 onkeydown="checkEnter(event)"
               ></textarea>
-              <button
-                class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-blue-600 mb-1 shrink-0"
-                onclick="showToast('Emoji seçici yakında!', 'info')"
-              >
-                <i class="fa-regular fa-face-smile text-xl"></i>
-              </button>
+              <div class="relative shrink-0">
+                <button
+                  type="button"
+                  id="emoji-btn"
+                  class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-blue-600 mb-1"
+                  onclick="toggleEmojiPicker(event)"
+                >
+                  <i class="fa-regular fa-face-smile text-xl"></i>
+                </button>
+                <div id="emoji-picker" class="hidden absolute bottom-12 right-0 bg-white rounded-2xl shadow-2xl border border-slate-100 p-3 w-80 max-h-[320px] overflow-hidden z-40">
+                  <!-- Tabs -->
+                  <div class="flex gap-1 mb-2 border-b border-slate-100 pb-2">
+                    <button type="button" data-emoji-tab="smileys" onclick="switchEmojiTab(this)" class="emoji-tab active text-base px-2 py-1 rounded-lg hover:bg-slate-50">😀</button>
+                    <button type="button" data-emoji-tab="hearts" onclick="switchEmojiTab(this)" class="emoji-tab text-base px-2 py-1 rounded-lg hover:bg-slate-50">❤️</button>
+                    <button type="button" data-emoji-tab="hands" onclick="switchEmojiTab(this)" class="emoji-tab text-base px-2 py-1 rounded-lg hover:bg-slate-50">👍</button>
+                    <button type="button" data-emoji-tab="animals" onclick="switchEmojiTab(this)" class="emoji-tab text-base px-2 py-1 rounded-lg hover:bg-slate-50">🐱</button>
+                    <button type="button" data-emoji-tab="food" onclick="switchEmojiTab(this)" class="emoji-tab text-base px-2 py-1 rounded-lg hover:bg-slate-50">🍕</button>
+                    <button type="button" data-emoji-tab="objects" onclick="switchEmojiTab(this)" class="emoji-tab text-base px-2 py-1 rounded-lg hover:bg-slate-50">💼</button>
+                    <button type="button" data-emoji-tab="symbols" onclick="switchEmojiTab(this)" class="emoji-tab text-base px-2 py-1 rounded-lg hover:bg-slate-50">✨</button>
+                  </div>
+                  <div id="emoji-grid" class="grid grid-cols-8 gap-1 overflow-y-auto" style="max-height: 240px;">
+                    <!-- Emojiler buraya yüklenir -->
+                  </div>
+                </div>
+              </div>
             </div>
 
             <button
@@ -455,8 +491,8 @@
           class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 focus:border-blue-500 focus:bg-white outline-none transition mb-4"
         />
 
-        <label class="block text-xs font-bold text-slate-400 uppercase mb-2"
-          >Üye Ekle</label
+        <label class="block text-xs font-bold text-slate-400 uppercase mb-2 flex items-center gap-1.5"
+          >Üye Ekle <span class="text-blue-600 normal-case font-bold text-[10px]"><i class="fa-solid fa-user-check"></i> Takip ettiklerinden</span></label
         >
         <div class="relative mb-3">
           <i
@@ -1128,15 +1164,78 @@
         showToast("Sessize alma özelliği yakında!", "info");
       }
 
+      // ============== EMOJİ SEÇİCİ ==============
+      const EMOJI_CATS = {
+        smileys: ['😀','😃','😄','😁','😆','😅','🤣','😂','🙂','🙃','😉','😊','😇','🥰','😍','🤩','😘','😗','☺️','😚','😙','😋','😛','😜','🤪','😝','🤑','🤗','🤭','🤫','🤔','🤐','🤨','😐','😑','😶','😏','😒','🙄','😬','🤥','😌','😔','😪','🤤','😴','😷','🤒','🤕','🤢','🤮','🥵','🥶','🥴','😵','🤯','🤠','🥳','😎','🤓','🧐','😕','😟','🙁','☹️','😮','😯','😲','😳','🥺','😦','😧','😨','😰','😥','😢','😭','😱','😖','😣','😞','😓','😩','😫','🥱','😤','😡','😠','🤬'],
+        hearts: ['❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❣️','💕','💞','💓','💗','💖','💘','💝','💟','♥️','💌','💋','🫶','😘','🥰','😍','💑','💏','👩‍❤️‍👨','👨‍❤️‍👨','👩‍❤️‍👩'],
+        hands: ['👍','👎','👌','✌️','🤞','🤟','🤘','🤙','👈','👉','👆','👇','☝️','✋','🤚','🖐️','🖖','👋','🤝','🙏','✊','👊','🤛','🤜','👏','🙌','👐','🤲','🤦','🤷','💪','🦾','🖕','💅','🤳','💃','🕺','🧎','🚶','🏃'],
+        animals: ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐽','🐸','🐵','🙈','🙉','🙊','🐒','🐔','🐧','🐦','🐤','🐣','🐥','🦆','🦅','🦉','🦇','🐺','🐗','🐴','🦄','🐝','🪱','🐛','🦋','🐌','🐞','🐜','🪰','🪲','🪳','🦟','🦗','🕷','🕸','🦂','🐢','🐍','🦎','🦖','🦕','🐙','🦑','🦐','🦞','🦀','🐡','🐠','🐟','🐬','🐳','🐋','🦈'],
+        food: ['🍏','🍎','🍐','🍊','🍋','🍌','🍉','🍇','🍓','🫐','🍈','🍒','🍑','🥭','🍍','🥥','🥝','🍅','🍆','🥑','🥦','🥬','🥒','🌶','🫑','🌽','🥕','🫒','🧄','🧅','🥔','🍠','🥐','🥯','🍞','🥖','🥨','🧀','🥚','🍳','🧈','🥞','🧇','🥓','🥩','🍗','🍖','🌭','🍔','🍟','🍕','🥪','🥙','🧆','🌮','🌯','🫔','🥗','🍲','🍜','🍝','🍣','🍱','🥟','🥠','🍤','🍙','🍚','🍘','🍥','🍢','🍡','🍧','🍨','🍦','🥧','🧁','🍰','🎂','🍮','🍭','🍬','🍫','🍿','🍩','🍪','🌰','🥜','🍯','🥛','🍼','☕','🫖','🍵','🍶','🍺','🍻','🥂','🍷','🥃','🍸','🍹','🧉','🍾','🧊','🥤','🧋','🧃'],
+        objects: ['📱','💻','⌨️','🖥','🖨','🖱','🖲','🕹','🗜','💽','💾','💿','📀','📼','📷','📸','📹','🎥','📽','🎬','📞','☎️','📟','📠','📺','📻','🎙','🎚','🎛','⏱','⏲','⏰','🕰','⌛','⏳','📡','🔋','🔌','💡','🔦','🕯','🪔','🧯','🛢','💸','💵','💴','💶','💷','💰','💳','💎','⚖️','🦯','🔧','🔨','⚒','🛠','⛏','🔩','⚙️','🧱','⛓','🧰','🧲','🔫','💣','🧨','🪓','🔪','🗡','⚔️','🛡','🚬','⚰️','⚱️','🏺','🔮','📿','🧿','💼','🎒','🛍'],
+        symbols: ['✨','⭐','🌟','💫','⚡','🔥','💥','☄️','💢','💯','💤','💨','💦','🌊','🎉','🎊','🎈','🎁','🎀','🎗','🎟','🎫','🎖','🏆','🏅','🥇','🥈','🥉','⚽','🏀','🏈','⚾','🎾','🏐','🏉','🎱','🏓','🏸','🥅','🏒','🏑','🥍','🏏','🪃','🥏','🪁','🏹','🎯','🎳','🎮','🎰','🎲','🧩','♠️','♥️','♦️','♣️','♟','🀄','✅','❌','❎','✔️','☑️','❔','❓','❕','❗','‼️','⁉️','〽️','✳️','✴️','❇️','©️','®️','™️','🆗','🆒','🆓','🆕','🆖','🆙','🆚','🅰️','🅱️','🆎','🆑','🅾️']
+      };
+      let currentEmojiTab = 'smileys';
+
+      function toggleEmojiPicker(e) {
+        e?.stopPropagation();
+        const picker = document.getElementById('emoji-picker');
+        if (picker.classList.contains('hidden')) {
+          renderEmojis(currentEmojiTab);
+          picker.classList.remove('hidden');
+        } else {
+          picker.classList.add('hidden');
+        }
+      }
+
+      function switchEmojiTab(btn) {
+        document.querySelectorAll('.emoji-tab').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentEmojiTab = btn.dataset.emojiTab;
+        renderEmojis(currentEmojiTab);
+      }
+
+      function renderEmojis(cat) {
+        const grid = document.getElementById('emoji-grid');
+        const list = EMOJI_CATS[cat] || EMOJI_CATS.smileys;
+        grid.innerHTML = list.map(e =>
+          `<span class="emoji-item" onclick="insertEmoji('${e}')">${e}</span>`
+        ).join('');
+      }
+
+      function insertEmoji(emoji) {
+        const input = document.getElementById('message-input');
+        if (!input) return;
+        const start = input.selectionStart || input.value.length;
+        const end = input.selectionEnd || input.value.length;
+        input.value = input.value.slice(0, start) + emoji + input.value.slice(end);
+        input.focus();
+        // Cursor'ı emoji'den sonra konumla
+        const newPos = start + emoji.length;
+        input.setSelectionRange(newPos, newPos);
+        // autoResize varsa çalıştır
+        if (typeof autoResize === 'function') autoResize(input);
+      }
+
+      // Dışarı tıklayınca emoji picker'ı kapat
+      document.addEventListener('click', (e) => {
+        const picker = document.getElementById('emoji-picker');
+        const btn = document.getElementById('emoji-btn');
+        if (picker && !picker.classList.contains('hidden') &&
+            !picker.contains(e.target) && !btn?.contains(e.target)) {
+          picker.classList.add('hidden');
+        }
+      });
+
       // ============== GRUP OLUŞTURMA ==============
       function openNewGroupModal() {
         selectedMembers = [];
+        groupFollowingCache = null; // takip listesi yeniden yüklensin
         document.getElementById("group-name-input").value = "";
         document.getElementById("member-search-input").value = "";
         document.getElementById("selected-members").innerHTML = "";
-        document.getElementById("user-search-results").innerHTML =
-          '<p class="text-xs text-slate-400 text-center py-8 font-medium">Aramak için yukarıya yaz.</p>';
         document.getElementById("new-group-modal").style.display = "flex";
+        // Modal açılır açılmaz takip listesini göster
+        searchUsersForGroup();
       }
       function openNewGroupModalFromMenu() {
         document.getElementById("chat-menu").classList.add("hidden");
@@ -1146,47 +1245,65 @@
         document.getElementById("new-group-modal").style.display = "none";
       }
 
+      // Grup oluştururken takip ettiklerimden seç
+      let groupFollowingCache = null;
+
       async function searchUsersForGroup() {
-        const q = document.getElementById("member-search-input").value.trim();
+        const q = document.getElementById("member-search-input").value.trim().toLowerCase();
         const results = document.getElementById("user-search-results");
 
-        if (q.length < 1) {
-          results.innerHTML =
-            '<p class="text-xs text-slate-400 text-center py-8 font-medium">Aramak için yukarıya yaz.</p>';
+        if (!groupFollowingCache) {
+          results.innerHTML = '<p class="text-xs text-slate-400 text-center py-8 font-medium">Yükleniyor...</p>';
+          try {
+            groupFollowingCache = await apiGet('/api/social/following');
+          } catch (err) {
+            results.innerHTML = `<p class="text-xs text-red-500 text-center py-8 font-medium">Hata: ${err.message}</p>`;
+            return;
+          }
+        }
+
+        if (groupFollowingCache.length === 0) {
+          results.innerHTML = `
+            <div class="text-center py-8 px-4">
+              <i class="fa-regular fa-user text-2xl text-slate-300 mb-2"></i>
+              <p class="text-xs text-slate-400 font-medium">Henüz kimseyi takip etmiyorsun.</p>
+              <p class="text-[10px] text-slate-400 mt-1">İşveren profillerinde <strong>Takip Et</strong> butonuna basabilirsin.</p>
+            </div>`;
           return;
         }
 
-        try {
-          const users = await apiGet(
-            `/api/messages/users/search?q=${encodeURIComponent(q)}`,
-          );
-          if (users.length === 0) {
-            results.innerHTML =
-              '<p class="text-xs text-slate-400 text-center py-8 font-medium">Kullanıcı bulunamadı.</p>';
-            return;
-          }
+        const users = q
+          ? groupFollowingCache.filter(u => u.full_name.toLowerCase().includes(q))
+          : groupFollowingCache;
 
-          results.innerHTML = users
-            .map((u) => {
-              const isSelected = selectedMembers.some((m) => m.id === u.id);
-              return `
-              <div onclick="toggleMember(${u.id}, '${escapeAttr(u.full_name)}', '${escapeAttr(u.avatar_url || "")}')"
-                class="flex items-center gap-3 p-3 cursor-pointer transition border-b border-slate-100 last:border-b-0 ${isSelected ? "bg-blue-50" : "hover:bg-slate-50"}">
-                <img id="header-avatar" src="${u.avatar_url || "https://i.pravatar.cc/150?u=" + u.id}" class="w-10 h-10 rounded-full object-cover">
-                <div class="flex-1 min-w-0">
-                  <p class="font-bold text-sm text-slate-900 truncate">${escapeHtml(u.full_name)}</p>
-                  <p class="text-[11px] font-medium text-slate-500 truncate">${escapeHtml(u.title || "")}</p>
-                </div>
-                <div class="w-6 h-6 rounded-full border-2 ${isSelected ? "bg-blue-600 border-blue-600" : "border-slate-300"} flex items-center justify-center">
-                  ${isSelected ? '<i class="fa-solid fa-check text-white text-xs"></i>' : ""}
-                </div>
-              </div>
-            `;
-            })
-            .join("");
-        } catch (err) {
-          results.innerHTML = `<p class="text-xs text-red-500 text-center py-8 font-medium">Hata: ${err.message}</p>`;
+        if (users.length === 0) {
+          results.innerHTML =
+            '<p class="text-xs text-slate-400 text-center py-8 font-medium">Sonuç bulunamadı.</p>';
+          return;
         }
+
+        results.innerHTML = users
+          .map((u) => {
+            const isSelected = selectedMembers.some((m) => m.id === u.id);
+            return `
+            <div onclick="toggleMember(${u.id}, '${escapeAttr(u.full_name)}', '${escapeAttr(u.avatar_url || "")}')"
+              class="flex items-center gap-3 p-3 cursor-pointer transition border-b border-slate-100 last:border-b-0 ${isSelected ? "bg-blue-50" : "hover:bg-slate-50"}">
+              <img src="${u.avatar_url || "https://i.pravatar.cc/150?u=" + u.id}" class="w-10 h-10 rounded-full object-cover">
+              <div class="flex-1 min-w-0">
+                <p class="font-bold text-sm text-slate-900 truncate">${escapeHtml(u.full_name)}</p>
+                <p class="text-[11px] font-medium text-slate-500 truncate">${escapeHtml(u.title || "Takip ettiğin kullanıcı")}</p>
+              </div>
+              <div class="w-6 h-6 rounded-full border-2 ${isSelected ? "bg-blue-600 border-blue-600" : "border-slate-300"} flex items-center justify-center">
+                ${isSelected ? '<i class="fa-solid fa-check text-white text-xs"></i>' : ""}
+              </div>
+            </div>
+          `;
+          })
+          .join("");
+      }
+
+      function resetGroupCache() {
+        groupFollowingCache = null;
       }
 
       function toggleMember(id, name, avatar) {
