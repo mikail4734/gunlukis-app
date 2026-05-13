@@ -155,7 +155,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Bir ilana başvur
+// Bir ilana başvur (+ takvime otomatik kırmızı event ekle)
 router.post('/:id/apply', async (req, res) => {
   try {
     const uid = currentUserId(req);
@@ -166,11 +166,86 @@ router.post('/:id/apply', async (req, res) => {
       [req.params.id, uid, cover_message || null]
     );
     await db.query('UPDATE jobs SET applicant_count = applicant_count + 1 WHERE id = ?', [req.params.id]);
+
+    // Takvime otomatik kırmızı (rose) event ekle — pending durumu
+    try {
+      const [jobs] = await db.query(
+        'SELECT title, work_date, start_time FROM jobs WHERE id = ?',
+        [req.params.id]
+      );
+      if (jobs.length > 0) {
+        const j = jobs[0];
+        await db.query(`
+          INSERT INTO calendar_events (user_id, job_id, title, note, event_date, start_time, color, source)
+          VALUES (?, ?, ?, ?, ?, ?, 'rose', 'job')
+          ON DUPLICATE KEY UPDATE color='rose'`,
+          [uid, req.params.id, j.title, 'Başvuru bekleniyor', j.work_date, j.start_time || null]
+        );
+      }
+    } catch (calErr) {
+      // Takvim ekleme başarısız olsa bile başvuru kabul edildi sayılır
+      console.error('Calendar event eklenemedi:', calErr.message);
+    }
+
     res.json({ success: true });
   } catch (err) {
     if (err.code === 'ER_DUP_ENTRY') {
       return res.status(409).json({ error: 'Zaten başvurdun' });
     }
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Başvuru durumunu güncelle (işveren tarafı) — takvim rengi otomatik değişir
+// PUT /api/jobs/applications/:applicationId/status  body: { status: 'accepted' | 'rejected' }
+router.put('/applications/:applicationId/status', async (req, res) => {
+  try {
+    const employerId = currentUserId(req);
+    const appId = req.params.applicationId;
+    const { status } = req.body;
+
+    if (!['accepted', 'rejected', 'completed', 'pending'].includes(status))
+      return res.status(400).json({ error: 'Geçersiz durum' });
+
+    // İlanın bu kullanıcıya ait olup olmadığını kontrol et
+    const [rows] = await db.query(`
+      SELECT a.id, a.worker_id, a.job_id, j.employer_id, j.title
+      FROM applications a JOIN jobs j ON j.id = a.job_id
+      WHERE a.id = ?`, [appId]);
+
+    if (rows.length === 0) return res.status(404).json({ error: 'Başvuru bulunamadı' });
+    const app = rows[0];
+    if (app.employer_id !== employerId)
+      return res.status(403).json({ error: 'Bu başvuruyu güncelleme yetkin yok' });
+
+    await db.query(
+      'UPDATE applications SET status = ?, responded_at = NOW() WHERE id = ?',
+      [status, appId]
+    );
+
+    // Worker'ın takvimindeki ilgili event'in rengini güncelle
+    const colorMap = {
+      accepted:  'emerald', // yeşil
+      rejected:  'slate',   // gri
+      completed: 'blue',
+      pending:   'rose'     // kırmızı
+    };
+    const newColor = colorMap[status] || 'slate';
+    const noteMap = {
+      accepted:  'Başvurun kabul edildi',
+      rejected:  'Başvurun reddedildi',
+      completed: 'İş tamamlandı',
+      pending:   'Başvuru bekleniyor'
+    };
+
+    await db.query(
+      `UPDATE calendar_events SET color = ?, note = ?
+       WHERE user_id = ? AND job_id = ?`,
+      [newColor, noteMap[status] || '', app.worker_id, app.job_id]
+    );
+
+    res.json({ success: true, status, color: newColor });
+  } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
@@ -211,6 +286,76 @@ router.get('/meta/tags', async (req, res) => {
   try {
     const [rows] = await db.query('SELECT id, name, slug, color FROM tags ORDER BY id');
     res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// İŞVEREN PROFİLİ (isveren-profil.html için)
+// ═══════════════════════════════════════════════════════════════════════════
+router.get('/users/:id/public', async (req, res) => {
+  try {
+    const meId = req.session.userId || null;
+    const targetId = Number(req.params.id);
+
+    // Kullanıcı bilgileri
+    const [users] = await db.query(`
+      SELECT id, full_name, email, phone, title, bio, avatar_url, role,
+             city, district, rating_avg, rating_count, is_verified, is_online,
+             total_earnings, created_at
+      FROM users WHERE id = ?`, [targetId]);
+
+    if (users.length === 0) return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
+    const user = users[0];
+    delete user.email;
+    delete user.phone;
+
+    // Verdiği iş ilanları
+    const [jobs] = await db.query(`
+      SELECT j.id, j.title, j.budget, j.work_date, j.city, j.district,
+             j.applicant_count, j.view_count, j.status, j.published_at,
+             c.name AS category_name,
+             (SELECT GROUP_CONCAT(t.name SEPARATOR '|') FROM job_tags jt JOIN tags t ON t.id = jt.tag_id WHERE jt.job_id = j.id) AS tags,
+             (SELECT GROUP_CONCAT(t.color SEPARATOR '|') FROM job_tags jt JOIN tags t ON t.id = jt.tag_id WHERE jt.job_id = j.id) AS tag_colors
+      FROM jobs j
+      JOIN categories c ON c.id = j.category_id
+      WHERE j.employer_id = ? AND j.status = 'published'
+      ORDER BY j.published_at DESC
+      LIMIT 30`, [targetId]);
+
+    const jobList = jobs.map(j => ({
+      ...j,
+      tags: j.tags ? j.tags.split('|') : [],
+      tag_colors: j.tag_colors ? j.tag_colors.split('|') : [],
+    }));
+
+    // Takipçi sayıları
+    const [[fCount]] = await db.query(
+      'SELECT COUNT(*) AS cnt FROM follows WHERE followed_id = ?', [targetId]
+    );
+    const [[fgCount]] = await db.query(
+      'SELECT COUNT(*) AS cnt FROM follows WHERE follower_id = ?', [targetId]
+    );
+
+    // Mevcut kullanıcı takip ediyor mu?
+    let is_following = false;
+    if (meId && meId !== targetId) {
+      const [[fr]] = await db.query(
+        'SELECT COUNT(*) AS cnt FROM follows WHERE follower_id = ? AND followed_id = ?',
+        [meId, targetId]
+      );
+      is_following = fr.cnt > 0;
+    }
+
+    res.json({
+      user,
+      jobs: jobList,
+      followers_count: fCount.cnt,
+      following_count: fgCount.cnt,
+      is_following,
+      is_self: meId === targetId
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

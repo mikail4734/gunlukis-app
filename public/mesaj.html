@@ -208,6 +208,18 @@
                 class="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-full text-sm font-medium focus:bg-white focus:border-blue-300 outline-none transition-all placeholder:text-slate-400"
               />
             </div>
+
+            <!-- Tab Bar: Tümü / Takip Ettiklerim -->
+            <div class="flex gap-1 mt-3 bg-slate-100 p-1 rounded-full">
+              <button id="tab-all" onclick="switchMsgTab('all')"
+                class="flex-1 py-1.5 text-xs font-bold rounded-full transition bg-white text-slate-900 shadow-sm">
+                <i class="fa-solid fa-comments mr-1"></i> Tümü
+              </button>
+              <button id="tab-following" onclick="switchMsgTab('following')"
+                class="flex-1 py-1.5 text-xs font-bold rounded-full transition text-slate-500 hover:text-slate-700">
+                <i class="fa-solid fa-user-check mr-1"></i> Takip Ettiklerim
+              </button>
+            </div>
           </div>
 
           <div
@@ -599,7 +611,18 @@
 
       window.addEventListener("DOMContentLoaded", async () => {
         await loadConversations();
-        if (chats.length > 0) loadChat(chats[0].id);
+
+        // URL'den ?conv=ID varsa onu aç (Soru Sor butonundan geldiyse)
+        const urlConv = new URLSearchParams(location.search).get('conv');
+        if (urlConv) {
+          // Liste yenile (yeni oluşturulmuş olabilir)
+          if (!chats.find(c => c.id == urlConv)) {
+            await loadConversations();
+          }
+          loadChat(Number(urlConv));
+        } else if (chats.length > 0) {
+          loadChat(chats[0].id);
+        }
         loadNotifBadge();
         loadHeaderUser();
 
@@ -637,7 +660,89 @@
       function onSearchInput() {
         const q = document.getElementById("search-input").value.trim();
         clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => loadConversations(q), 250);
+        if (currentMsgTab === 'following') {
+          // Following modunda local filtreleme
+          renderFollowingList(q);
+        } else {
+          searchTimeout = setTimeout(() => loadConversations(q), 250);
+        }
+      }
+
+      // ============== TAB GEÇİŞİ (Tümü / Takip Ettiklerim) ==============
+      let currentMsgTab = 'all';
+      let followingList = [];
+
+      async function switchMsgTab(tab) {
+        currentMsgTab = tab;
+        const btnAll = document.getElementById('tab-all');
+        const btnFol = document.getElementById('tab-following');
+        if (tab === 'all') {
+          btnAll.classList.add('bg-white', 'text-slate-900', 'shadow-sm');
+          btnAll.classList.remove('text-slate-500');
+          btnFol.classList.remove('bg-white', 'text-slate-900', 'shadow-sm');
+          btnFol.classList.add('text-slate-500');
+          renderChatList();
+        } else {
+          btnFol.classList.add('bg-white', 'text-slate-900', 'shadow-sm');
+          btnFol.classList.remove('text-slate-500');
+          btnAll.classList.remove('bg-white', 'text-slate-900', 'shadow-sm');
+          btnAll.classList.add('text-slate-500');
+          if (followingList.length === 0) {
+            try { followingList = await apiGet('/api/social/following'); }
+            catch (err) { followingList = []; }
+          }
+          renderFollowingList();
+        }
+      }
+
+      function renderFollowingList(filter = '') {
+        const container = document.getElementById("chat-list-container");
+        const list = filter
+          ? followingList.filter(u => u.full_name.toLowerCase().includes(filter.toLowerCase()))
+          : followingList;
+
+        if (list.length === 0) {
+          container.innerHTML = `
+            <div class="text-center mt-10 px-4">
+              <i class="fa-regular fa-user text-3xl text-slate-300 mb-3"></i>
+              <p class="text-sm text-slate-400 font-medium">${filter ? 'Sonuç bulunamadı.' : 'Henüz kimseyi takip etmiyorsun.'}</p>
+              <p class="text-xs text-slate-400 mt-1">İşveren profillerine girip <strong>Takip Et</strong> butonuna basabilirsin.</p>
+            </div>`;
+          return;
+        }
+
+        container.innerHTML = list.map(u => {
+          const online = u.is_online
+            ? '<div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>'
+            : '';
+          return `
+            <div onclick="startChatWith(${u.id})" class="flex items-center gap-3 p-3 rounded-2xl cursor-pointer transition-all mb-1 hover:bg-slate-50">
+              <div class="relative shrink-0">
+                <img src="${u.avatar_url || 'https://i.pravatar.cc/150?u=' + u.id}" class="w-12 h-12 rounded-full object-cover">
+                ${online}
+              </div>
+              <div class="flex-1 min-w-0">
+                <h3 class="font-bold text-[14px] text-slate-900 truncate flex items-center gap-1.5">
+                  ${escapeHtml(u.full_name)}
+                  ${u.is_verified ? '<i class="fa-solid fa-circle-check text-blue-500 text-xs"></i>' : ''}
+                </h3>
+                <p class="text-[12px] font-medium truncate text-slate-500">${escapeHtml(u.title || 'Kullanıcı')}</p>
+              </div>
+              <i class="fa-solid fa-message text-slate-300 text-sm"></i>
+            </div>`;
+        }).join('');
+      }
+
+      async function startChatWith(userId) {
+        try {
+          const res = await apiPost('/api/social/conversations/start', { target_user_id: userId });
+          // "Tümü" sekmesine geri dön ve konuşmayı aç
+          await switchMsgTab('all');
+          await loadConversations();
+          loadChat(res.conversation_id);
+        } catch (err) {
+          showToast(err.message, 'error');
+        }
       }
 
       // ============== SOHBET LİSTESİNİ ÇİZ ==============

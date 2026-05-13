@@ -14,6 +14,10 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
     />
 
+    <!-- Leaflet: Ücretsiz harita -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -63,6 +67,14 @@
         background-image: url("https://www.transparenttextures.com/patterns/cubes.png");
         background-color: #e2e8f0;
       }
+      #job-map {
+        width: 100%;
+        height: 180px;
+        border-radius: 0.75rem;
+        border: 1px solid #e2e8f0;
+        z-index: 1;
+      }
+      .leaflet-control-attribution { font-size: 9px !important; }
 
       /* Toast */
       #toast-container {
@@ -252,11 +264,13 @@
                   </div>
                 </div>
               </div>
-              <button
-                class="hidden md:block px-4 py-2 bg-white border border-slate-200 text-slate-600 font-bold text-xs rounded-xl hover:text-blue-600 transition shadow-sm"
+              <a
+                id="employer-profile-link"
+                href="#"
+                class="hidden md:inline-block px-4 py-2 bg-white border border-slate-200 text-slate-600 font-bold text-xs rounded-xl hover:text-blue-600 hover:border-blue-200 transition shadow-sm"
               >
                 Profile Git
-              </button>
+              </a>
             </div>
           </div>
 
@@ -321,15 +335,10 @@
                     Konum
                   </p>
                   <p id="job-location" class="text-sm font-bold text-slate-800 mb-2">—</p>
-                  <div
-                    class="w-full h-24 rounded-xl map-placeholder border border-slate-200 relative overflow-hidden group flex items-center justify-center cursor-pointer"
-                  >
-                    <button
-                      class="bg-white/90 backdrop-blur text-xs font-bold text-slate-800 px-3 py-1.5 rounded-lg shadow-sm group-hover:bg-blue-600 group-hover:text-white transition"
-                    >
-                      Haritada Gör
-                    </button>
-                  </div>
+                  <div id="job-map"></div>
+                  <p id="job-map-fallback" class="hidden text-xs text-slate-400 font-medium text-center py-4 bg-slate-50 rounded-xl">
+                    <i class="fa-solid fa-location-dot mr-1"></i> Haritada konum bilgisi eklenmemiş
+                  </p>
                 </div>
               </div>
             </div>
@@ -344,7 +353,8 @@
                 <div id="apply-loader" class="loader"></div>
               </button>
               <button
-                onclick="window.location='mesaj.html'"
+                onclick="askQuestion()"
+                id="ask-btn"
                 class="w-full bg-white border-2 border-slate-100 text-slate-600 font-bold py-3.5 rounded-xl text-[15px] hover:border-slate-300 hover:text-slate-800 transition-colors flex items-center justify-center gap-2"
               >
                 <i class="fa-regular fa-message"></i> Soru Sor
@@ -447,6 +457,20 @@
           document.getElementById('job-location').textContent =
             `${job.district ? job.district + ', ' : ''}${job.city}`;
 
+          // Harita — koordinat varsa Leaflet ile göster
+          if (job.latitude && job.longitude) {
+            initJobMap(parseFloat(job.latitude), parseFloat(job.longitude), job.title);
+          } else {
+            document.getElementById('job-map').style.display = 'none';
+            document.getElementById('job-map-fallback').classList.remove('hidden');
+          }
+
+          // İşveren profile linkini ayarla
+          if (job.employer_id) {
+            document.getElementById('employer-profile-link').href =
+              'isveren-profil.html?id=' + job.employer_id;
+          }
+
           // Bookmark durumu
           if (job.is_bookmarked) {
             const bm = document.getElementById('bookmark-btn');
@@ -465,6 +489,52 @@
           }
         } catch (err) {
           showToast('İlan yüklenemedi: ' + err.message, 'error');
+        }
+      }
+
+      // Leaflet harita
+      function initJobMap(lat, lng, title) {
+        const map = L.map('job-map', {
+          zoomControl: true,
+          dragging: true,
+          scrollWheelZoom: false
+        }).setView([lat, lng], 15);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OSM',
+          maxZoom: 19
+        }).addTo(map);
+
+        L.marker([lat, lng]).addTo(map).bindPopup(title || 'İş Konumu').openPopup();
+      }
+
+      // Soru Sor — konuşma başlat (varsa mevcut, yoksa yeni) ve mesaj sayfasına git
+      async function askQuestion() {
+        if (!currentJob || !currentJob.employer_id) {
+          showToast('İlan bilgileri yüklenemedi.', 'error');
+          return;
+        }
+        const btn = document.getElementById('ask-btn');
+        const original = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Açılıyor...';
+
+        try {
+          const res = await apiPost('/api/social/conversations/start', {
+            target_user_id: currentJob.employer_id,
+            job_id: currentJob.id
+          });
+          // Mesaj sayfasına konuşma ID'siyle yönlendir
+          window.location.href = 'mesaj.html?conv=' + res.conversation_id;
+        } catch (err) {
+          btn.disabled = false;
+          btn.innerHTML = original;
+          if (err.message && err.message.includes('Giriş')) {
+            showToast('Önce giriş yapmalısın.', 'error');
+            setTimeout(() => window.location = 'giris.html', 1200);
+          } else {
+            showToast(err.message, 'error');
+          }
         }
       }
 
