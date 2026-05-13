@@ -155,11 +155,16 @@
 
     async function handleGoogleCredential(response) {
       try {
-        const data = await apiPost('/api/auth/google', { credential: response.credential });
+        // Seçilen rolü Google kayıt isteğine ekle (yeni kullanıcı için kullanılır)
+        const data = await apiPost('/api/auth/google', {
+          credential: response.credential,
+          role: selectedRole
+        });
         if (data.success) {
           localStorage.setItem('gu_user', JSON.stringify(data.user));
           showToast('Hoş geldin, ' + data.user.full_name + '!');
-          setTimeout(() => window.location.href = 'index.html', 800);
+          const dest = data.user.role === 'employer' ? 'isveren-panel.html' : 'index.html';
+          setTimeout(() => window.location.href = dest, 800);
         }
       } catch (err) { showToast(err.message, 'error'); }
     }
@@ -194,7 +199,8 @@
         if (data.success) {
           localStorage.setItem('gu_user', JSON.stringify(data.user));
           showToast('Hesabın oluşturuldu! Hoş geldin 🎉');
-          setTimeout(() => window.location.href = 'index.html', 900);
+          const dest = selectedRole === 'employer' ? 'isveren-panel.html' : 'index.html';
+          setTimeout(() => window.location.href = dest, 900);
         }
       } catch (err) {
         showToast(err.message, 'error');

@@ -281,6 +281,131 @@ router.get('/meta/categories', async (req, res) => {
   }
 });
 
+// ═══════════════════════════════════════════════════════════════════════════
+// İŞVEREN PANELİ — Yayınladığım ilanlar (başvuru sayılarıyla)
+// ═══════════════════════════════════════════════════════════════════════════
+router.get('/me/employer', async (req, res) => {
+  try {
+    const uid = req.session.userId;
+    if (!uid) return res.status(401).json({ error: 'Giriş yapılmamış' });
+
+    const [jobs] = await db.query(`
+      SELECT j.id, j.title, j.budget, j.work_date, j.start_time, j.city, j.district,
+             j.status, j.view_count, j.applicant_count, j.published_at,
+             c.name AS category_name, c.icon AS category_icon,
+             (SELECT COUNT(*) FROM applications WHERE job_id = j.id AND status = 'pending') AS pending_count,
+             (SELECT COUNT(*) FROM applications WHERE job_id = j.id AND status = 'accepted') AS accepted_count,
+             (SELECT GROUP_CONCAT(t.name SEPARATOR '|') FROM job_tags jt JOIN tags t ON t.id = jt.tag_id WHERE jt.job_id = j.id) AS tags,
+             (SELECT GROUP_CONCAT(t.color SEPARATOR '|') FROM job_tags jt JOIN tags t ON t.id = jt.tag_id WHERE jt.job_id = j.id) AS tag_colors
+      FROM jobs j
+      JOIN categories c ON c.id = j.category_id
+      WHERE j.employer_id = ?
+      ORDER BY j.published_at DESC`, [uid]);
+
+    const result = jobs.map(j => ({
+      ...j,
+      tags: j.tags ? j.tags.split('|') : [],
+      tag_colors: j.tag_colors ? j.tag_colors.split('|') : []
+    }));
+
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// İŞVEREN İSTATİSTİKLERİ
+router.get('/me/employer/stats', async (req, res) => {
+  try {
+    const uid = req.session.userId;
+    if (!uid) return res.status(401).json({ error: 'Giriş yapılmamış' });
+
+    const [[totalJobs]]    = await db.query('SELECT COUNT(*) AS cnt FROM jobs WHERE employer_id = ?', [uid]);
+    const [[activeJobs]]   = await db.query("SELECT COUNT(*) AS cnt FROM jobs WHERE employer_id = ? AND status = 'published'", [uid]);
+    const [[totalApps]]    = await db.query(`
+      SELECT COUNT(*) AS cnt FROM applications a JOIN jobs j ON j.id = a.job_id WHERE j.employer_id = ?`, [uid]);
+    const [[pendingApps]]  = await db.query(`
+      SELECT COUNT(*) AS cnt FROM applications a JOIN jobs j ON j.id = a.job_id WHERE j.employer_id = ? AND a.status = 'pending'`, [uid]);
+    const [[totalBudget]]  = await db.query("SELECT COALESCE(SUM(budget),0) AS total FROM jobs WHERE employer_id = ? AND status IN ('published','completed')", [uid]);
+    const [[totalViews]]   = await db.query("SELECT COALESCE(SUM(view_count),0) AS total FROM jobs WHERE employer_id = ?", [uid]);
+
+    res.json({
+      total_jobs:    totalJobs.cnt,
+      active_jobs:   activeJobs.cnt,
+      total_applications: totalApps.cnt,
+      pending_applications: pendingApps.cnt,
+      total_budget:  parseFloat(totalBudget.total),
+      total_views:   totalViews.total
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// BİR İLANIN BAŞVURANLARINI LİSTELE (sadece o ilanın sahibi)
+router.get('/:id/applicants', async (req, res) => {
+  try {
+    const uid = req.session.userId;
+    if (!uid) return res.status(401).json({ error: 'Giriş yapılmamış' });
+
+    // İlanın bu kullanıcıya ait olduğunu doğrula
+    const [own] = await db.query('SELECT employer_id, title FROM jobs WHERE id = ?', [req.params.id]);
+    if (own.length === 0) return res.status(404).json({ error: 'İlan bulunamadı' });
+    if (own[0].employer_id !== uid) return res.status(403).json({ error: 'Bu ilana erişim yetkin yok' });
+
+    const [apps] = await db.query(`
+      SELECT a.id, a.status, a.cover_message, a.applied_at, a.responded_at,
+             u.id AS worker_id, u.full_name AS worker_name, u.avatar_url AS worker_avatar,
+             u.title AS worker_title, u.rating_avg, u.rating_count, u.is_verified,
+             u.city, u.district
+      FROM applications a
+      JOIN users u ON u.id = a.worker_id
+      WHERE a.job_id = ?
+      ORDER BY FIELD(a.status,'pending','accepted','completed','rejected','withdrawn'), a.applied_at DESC`,
+      [req.params.id]
+    );
+
+    res.json({ job_title: own[0].title, applicants: apps });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// İLANI ARŞİVLE / SİL (sahibi)
+router.delete('/:id', async (req, res) => {
+  try {
+    const uid = req.session.userId;
+    if (!uid) return res.status(401).json({ error: 'Giriş yapılmamış' });
+    const [own] = await db.query('SELECT employer_id FROM jobs WHERE id = ?', [req.params.id]);
+    if (own.length === 0) return res.status(404).json({ error: 'İlan yok' });
+    if (own[0].employer_id !== uid) return res.status(403).json({ error: 'Yetkin yok' });
+    await db.query('DELETE FROM jobs WHERE id = ?', [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// İLAN DURUMUNU DEĞİŞTİR (published/closed)
+router.put('/:id/status', async (req, res) => {
+  try {
+    const uid = req.session.userId;
+    if (!uid) return res.status(401).json({ error: 'Giriş yapılmamış' });
+    const { status } = req.body;
+    if (!['published','closed','completed'].includes(status))
+      return res.status(400).json({ error: 'Geçersiz durum' });
+
+    const [own] = await db.query('SELECT employer_id FROM jobs WHERE id = ?', [req.params.id]);
+    if (own.length === 0) return res.status(404).json({ error: 'İlan yok' });
+    if (own[0].employer_id !== uid) return res.status(403).json({ error: 'Yetkin yok' });
+
+    await db.query('UPDATE jobs SET status = ? WHERE id = ?', [status, req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Etiket listesi (is-ver.html için)
 router.get('/meta/tags', async (req, res) => {
   try {

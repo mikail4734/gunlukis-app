@@ -114,13 +114,15 @@ router.post('/login', async (req, res) => {
 // ══════════════════════════════════════════════════════════════════════════
 router.post('/google', async (req, res) => {
   try {
-    const { credential } = req.body;
+    const { credential, role } = req.body;
     if (!credential) return res.status(400).json({ error: 'Google token eksik' });
 
     const gInfo = await verifyGoogleToken(credential);
     const { email, name, picture, sub: googleId } = gInfo;
 
     if (!email) return res.status(400).json({ error: 'Google hesabında e-posta yok' });
+
+    const newRole = (role === 'employer') ? 'employer' : 'worker';
 
     let [rows] = await db.query('SELECT * FROM users WHERE email=?', [email.toLowerCase()]);
     let user;
@@ -130,18 +132,18 @@ router.post('/google', async (req, res) => {
       try {
         const [result] = await db.query(
           `INSERT INTO users (full_name, email, google_id, avatar_url, role, is_verified)
-           VALUES (?, ?, ?, ?, 'worker', 1)`,
-          [name, email.toLowerCase(), googleId, picture || null]
+           VALUES (?, ?, ?, ?, ?, 1)`,
+          [name, email.toLowerCase(), googleId, picture || null, newRole]
         );
-        user = { id: result.insertId, full_name: name, email, role: 'worker', avatar_url: picture };
+        user = { id: result.insertId, full_name: name, email, role: newRole, avatar_url: picture };
       } catch (insertErr) {
         // google_id kolonu yoksa yeniden dene
         const [result] = await db.query(
           `INSERT INTO users (full_name, email, avatar_url, role, is_verified)
-           VALUES (?, ?, ?, 'worker', 1)`,
-          [name, email.toLowerCase(), picture || null]
+           VALUES (?, ?, ?, ?, 1)`,
+          [name, email.toLowerCase(), picture || null, newRole]
         );
-        user = { id: result.insertId, full_name: name, email, role: 'worker', avatar_url: picture };
+        user = { id: result.insertId, full_name: name, email, role: newRole, avatar_url: picture };
       }
     } else {
       user = rows[0];

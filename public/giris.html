@@ -134,7 +134,9 @@
         if (data.success) {
           localStorage.setItem('gu_user', JSON.stringify(data.user));
           showToast('Hoş geldin, ' + data.user.full_name + '!');
-          setTimeout(() => window.location.href = 'index.html', 800);
+          const redirect = new URLSearchParams(location.search).get('redirect');
+          const defaultDest = data.user.role === 'employer' ? 'isveren-panel.html' : 'index.html';
+          setTimeout(() => window.location.href = redirect || defaultDest, 800);
         }
       } catch (err) {
         showToast(err.message, 'error');
@@ -160,8 +162,9 @@
         if (data.success) {
           localStorage.setItem('gu_user', JSON.stringify(data.user));
           showToast('Hoş geldin!');
-          const redirect = new URLSearchParams(location.search).get('redirect') || 'index.html';
-          setTimeout(() => window.location.href = redirect, 800);
+          const redirect = new URLSearchParams(location.search).get('redirect');
+          const defaultDest = data.user.role === 'employer' ? 'isveren-panel.html' : 'index.html';
+          setTimeout(() => window.location.href = redirect || defaultDest, 800);
         }
       } catch (err) {
         showToast(err.message, 'error');

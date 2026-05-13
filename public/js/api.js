@@ -88,10 +88,29 @@ async function loadHeaderUser() {
     // localStorage cache
     localStorage.setItem('gu_user', JSON.stringify(user));
 
+    // İŞVEREN ise: dropdown'a "İşveren Paneli" linki ekle
+    if (user.role === 'employer') {
+      document.querySelectorAll('button[onclick="logoutUser()"]').forEach(btn => {
+        const dropdown = btn.parentElement;
+        if (dropdown && !dropdown.querySelector('a[href="isveren-panel.html"]')) {
+          const empLink = document.createElement('a');
+          empLink.href = 'isveren-panel.html';
+          empLink.className = 'block px-5 py-2.5 text-sm font-bold text-blue-600 hover:bg-blue-50 transition';
+          empLink.innerHTML = '<i class="fa-solid fa-building mr-1.5"></i> İşveren Paneli';
+          // En üste ekle (Üye profiline git'in altına)
+          const firstLink = dropdown.querySelector('a[href="profil.html"]');
+          if (firstLink && firstLink.nextSibling) {
+            dropdown.insertBefore(empLink, firstLink.nextSibling);
+          } else {
+            dropdown.insertBefore(empLink, btn);
+          }
+        }
+      });
+    }
+
     // ADMIN ise: dropdown'a "Admin Panel" linki ekle
     if (user.is_admin) {
       document.querySelectorAll('button[onclick="logoutUser()"]').forEach(btn => {
-        // Aynı linki birden fazla ekleme
         const dropdown = btn.parentElement;
         if (dropdown && !dropdown.querySelector('a[href="admin.html"]')) {
           const adminLink = document.createElement('a');
