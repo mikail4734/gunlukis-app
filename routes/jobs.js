@@ -115,7 +115,8 @@ router.post('/', async (req, res) => {
     const {
       title, description, requirements, category_id, work_type, job_type,
       budget, work_date, start_time, duration_hours,
-      city, district, address_text, materials_included
+      city, district, address_text, materials_included,
+      latitude, longitude, tag_ids
     } = req.body;
 
     if (!title || !description || !category_id || !budget || !work_date || !city) {
@@ -126,15 +127,29 @@ router.post('/', async (req, res) => {
       INSERT INTO jobs
         (employer_id, category_id, title, description, requirements,
          work_type, job_type, budget, work_date, start_time, duration_hours,
-         city, district, address_text, materials_included, status, published_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'published', NOW())`,
+         city, district, address_text, latitude, longitude, materials_included,
+         status, published_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'published', NOW())`,
       [uid, category_id, title, description, requirements || null,
        work_type || 'full_time', job_type || 'daily', budget, work_date,
        start_time || null, duration_hours || null,
-       city, district || null, address_text || null, materials_included ? 1 : 0]
+       city, district || null, address_text || null,
+       latitude || null, longitude || null, materials_included ? 1 : 0]
     );
 
-    res.json({ success: true, id: result.insertId });
+    const jobId = result.insertId;
+
+    // Etiketleri kaydet (varsa)
+    if (Array.isArray(tag_ids) && tag_ids.length > 0) {
+      const tagValues = tag_ids
+        .filter(id => Number.isFinite(Number(id)))
+        .map(id => [jobId, Number(id)]);
+      if (tagValues.length > 0) {
+        await db.query('INSERT INTO job_tags (job_id, tag_id) VALUES ?', [tagValues]);
+      }
+    }
+
+    res.json({ success: true, id: jobId });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -185,6 +200,16 @@ router.get('/meta/categories', async (req, res) => {
     const [rows] = await db.query(
       'SELECT id, name, slug, icon FROM categories WHERE is_active = 1 ORDER BY sort_order'
     );
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Etiket listesi (is-ver.html için)
+router.get('/meta/tags', async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT id, name, slug, color FROM tags ORDER BY id');
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
