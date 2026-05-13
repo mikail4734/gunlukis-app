@@ -32,7 +32,7 @@
             <span class="text-xl font-extrabold tracking-tight text-slate-900">Günlükİş</span>
           </a>
           <div class="hidden md:flex items-center gap-4">
-            <button class="text-sm font-bold bg-slate-900 text-white px-6 py-2.5 rounded-full hover:bg-slate-800 transition shadow-md">İş Ver</button>
+            <a href="is-ver.html" class="text-sm font-bold bg-slate-900 text-white px-6 py-2.5 rounded-full hover:bg-slate-800 transition shadow-md">İş Ver</a>
             <div class="w-px h-6 bg-slate-200 mx-2"></div>
             <div class="relative">
               <button onclick="toggleNotifications(event)" id="notif-bell-btn" class="relative p-2 text-slate-500 hover:text-slate-900 transition">
@@ -134,20 +134,20 @@
         <div class="lg:col-span-3">
           <div class="bg-white rounded-3xl border border-slate-100 shadow-sm p-8">
             <h2 class="text-xl font-extrabold text-slate-900 mb-6">Mesaj Gönder</h2>
-            <form onsubmit="submitContact(event)" class="space-y-5">
+            <form id="contact-form" onsubmit="submitContact(event)" class="space-y-5">
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div>
                   <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Ad Soyad</label>
-                  <input type="text" placeholder="Adınız" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:border-blue-500 focus:bg-white outline-none transition-all" />
+                  <input id="contact-name" type="text" placeholder="Adınız" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:border-blue-500 focus:bg-white outline-none transition-all" />
                 </div>
                 <div>
                   <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">E-posta</label>
-                  <input type="email" placeholder="ornek@mail.com" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:border-blue-500 focus:bg-white outline-none transition-all" />
+                  <input id="contact-email" type="email" placeholder="ornek@mail.com" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:border-blue-500 focus:bg-white outline-none transition-all" />
                 </div>
               </div>
               <div>
                 <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Konu</label>
-                <select class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:border-blue-500 focus:bg-white outline-none transition-all">
+                <select id="contact-subject" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:border-blue-500 focus:bg-white outline-none transition-all">
                   <option>Teknik Destek</option>
                   <option>İlan Şikayeti</option>
                   <option>Hesap Problemi</option>
@@ -157,9 +157,9 @@
               </div>
               <div>
                 <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Mesajınız</label>
-                <textarea rows="5" placeholder="Mesajınızı buraya yazın..." required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:border-blue-500 focus:bg-white outline-none transition-all resize-none"></textarea>
+                <textarea id="contact-message" rows="5" placeholder="Mesajınızı buraya yazın..." required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:border-blue-500 focus:bg-white outline-none transition-all resize-none"></textarea>
               </div>
-              <button type="submit" class="w-full bg-blue-600 text-white font-bold py-4 rounded-xl hover:bg-blue-700 transition shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2">
+              <button type="submit" id="contact-submit-btn" class="w-full bg-blue-600 text-white font-bold py-4 rounded-xl hover:bg-blue-700 transition shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2">
                 <i class="fa-solid fa-paper-plane"></i> Mesaj Gönder
               </button>
             </form>
@@ -248,7 +248,48 @@
       }
       document.addEventListener("click", e => { const dd=document.getElementById("notif-dropdown"); if(!dd?.classList.contains("open")) return; if(!dd.contains(e.target)&&!document.getElementById("notif-bell-btn")?.contains(e.target)) dd.classList.remove("open"); });
       async function loadNotifBadge() { try { const d=await apiGet("/api/notifications"); if(d.unread>0){document.getElementById("notif-badge")?.classList.remove("hidden");document.getElementById("notif-badge-mobile")?.classList.remove("hidden");} } catch(e){} }
-      window.addEventListener("DOMContentLoaded", ()=>{ loadNotifBadge(); loadHeaderUser(); });
+      window.addEventListener("DOMContentLoaded", () => {
+        loadNotifBadge();
+        loadHeaderUser().then(user => {
+          // Giriş yapmış kullanıcının bilgilerini forma doldur
+          if (user) {
+            const nameEl = document.getElementById('contact-name');
+            const emailEl = document.getElementById('contact-email');
+            if (nameEl && !nameEl.value) nameEl.value = user.full_name || '';
+            if (emailEl && !emailEl.value) emailEl.value = user.email || '';
+          }
+        });
+      });
+
+      async function submitContact(e) {
+        e.preventDefault();
+        const btn = document.getElementById('contact-submit-btn');
+        const name    = document.getElementById('contact-name').value.trim();
+        const email   = document.getElementById('contact-email').value.trim();
+        const subject = document.getElementById('contact-subject').value;
+        const message = document.getElementById('contact-message').value.trim();
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Gönderiliyor...';
+
+        try {
+          await apiPost('/api/auth/contact', { name, email, subject, message });
+          // Başarı ekranı göster
+          document.getElementById('contact-form').innerHTML = `
+            <div class="text-center py-10">
+              <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fa-solid fa-check text-green-600 text-2xl"></i>
+              </div>
+              <h3 class="text-xl font-extrabold text-slate-900 mb-2">Mesajınız İletildi!</h3>
+              <p class="text-slate-500 text-sm font-medium">En kısa sürede <strong>${email}</strong> adresinize geri döneceğiz.</p>
+              <button onclick="location.reload()" class="mt-6 text-sm font-bold text-blue-600 hover:underline">Yeni mesaj gönder</button>
+            </div>`;
+        } catch (err) {
+          showToast(err.message || 'Bir hata oluştu, lütfen tekrar deneyin.', 'error');
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Mesaj Gönder';
+        }
+      }
     </script>
   </body>
 </html>

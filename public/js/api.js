@@ -91,6 +91,11 @@ async function loadHeaderUser() {
 // Çıkış yap (tüm sayfalardan çağrılabilir)
 async function logoutUser() {
   try { await apiPost('/api/auth/logout'); } catch {}
+  // Google One Tap otomatik girişini engelle
+  if (window.google && google.accounts && google.accounts.id) {
+    google.accounts.id.disableAutoSelect();
+  }
   localStorage.removeItem('gu_user');
+  localStorage.setItem('gu_just_logged_out', '1');
   window.location.href = 'giris.html';
 }

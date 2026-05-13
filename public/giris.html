@@ -183,6 +183,11 @@
 
     // Zaten giriş yapmışsa yönlendir
     async function checkAuth() {
+      // Çıkış yapıldıktan sonra otomatik yönlendirmeyi engelle
+      if (localStorage.getItem('gu_just_logged_out')) {
+        localStorage.removeItem('gu_just_logged_out');
+        return;
+      }
       try {
         await apiGet('/api/auth/me');
         window.location.href = 'index.html';

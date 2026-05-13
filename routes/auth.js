@@ -309,6 +309,74 @@ router.post('/reset-password', async (req, res) => {
 });
 
 // ══════════════════════════════════════════════════════════════════════════
+// İLETİŞİM FORMU
+// ══════════════════════════════════════════════════════════════════════════
+router.post('/contact', async (req, res) => {
+  try {
+    const { name, email, subject, message } = req.body;
+    if (!name || !email || !message)
+      return res.status(400).json({ error: 'Ad, e-posta ve mesaj zorunludur' });
+
+    const adminEmail = process.env.EMAIL_USER;
+    if (!adminEmail) {
+      // Geliştirme ortamı: konsola yaz
+      console.log(`\n📬 [İLETİŞİM FORMU]\nAd: ${name}\nE-posta: ${email}\nKonu: ${subject}\nMesaj: ${message}\n`);
+      return res.json({ success: true });
+    }
+
+    await sendMail({
+      to: adminEmail,
+      subject: `[Günlükİş İletişim] ${subject || 'Yeni Mesaj'} — ${name}`,
+      html: `
+        <div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:24px">
+          <h2 style="color:#1e293b;margin-bottom:4px">Yeni İletişim Mesajı</h2>
+          <p style="color:#64748b;font-size:14px;margin-top:0">Günlükİş platformu üzerinden gönderildi</p>
+          <hr style="border:none;border-top:1px solid #e2e8f0;margin:20px 0"/>
+          <table style="width:100%;font-size:14px;color:#334155">
+            <tr><td style="padding:6px 0;font-weight:700;width:90px">Ad Soyad:</td><td>${name}</td></tr>
+            <tr><td style="padding:6px 0;font-weight:700">E-posta:</td><td><a href="mailto:${email}" style="color:#2563eb">${email}</a></td></tr>
+            <tr><td style="padding:6px 0;font-weight:700">Konu:</td><td>${subject || '—'}</td></tr>
+          </table>
+          <hr style="border:none;border-top:1px solid #e2e8f0;margin:20px 0"/>
+          <p style="font-weight:700;color:#1e293b;margin-bottom:8px">Mesaj:</p>
+          <p style="background:#f8fafc;border-radius:12px;padding:16px;color:#334155;font-size:14px;line-height:1.7">${message.replace(/\n/g,'<br>')}</p>
+          <hr style="border:none;border-top:1px solid #e2e8f0;margin:20px 0"/>
+          <p style="font-size:12px;color:#94a3b8">Bu mesaja yanıt vermek için doğrudan <a href="mailto:${email}" style="color:#2563eb">${email}</a> adresine e-posta gönderin.</p>
+        </div>
+      `
+    });
+
+    // Gönderen kullanıcıya onay maili
+    await sendMail({
+      to: email,
+      subject: 'Mesajınızı aldık — Günlükİş',
+      html: `
+        <div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:24px">
+          <div style="text-align:center;margin-bottom:24px">
+            <div style="background:#2563eb;display:inline-block;padding:12px 16px;border-radius:12px">
+              <span style="color:white;font-weight:800;font-size:18px">Günlükİş</span>
+            </div>
+          </div>
+          <h2 style="color:#1e293b">Mesajınızı aldık, ${name}!</h2>
+          <p style="color:#64748b;font-size:14px;line-height:1.7">
+            İletişim formunu doldurduğunuz için teşekkürler. Ekibimiz en kısa sürede size geri dönecektir.
+          </p>
+          <div style="background:#f8fafc;border-radius:12px;padding:16px;margin:20px 0">
+            <p style="font-size:13px;color:#64748b;margin:0"><strong>Konunuz:</strong> ${subject || '—'}</p>
+          </div>
+          <p style="font-size:12px;color:#94a3b8">Eğer bu formu siz doldurmadıysanız bu e-postayı görmezden gelin.</p>
+        </div>
+      `
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Contact form error:', err.message);
+    res.status(500).json({ error: 'Mesaj gönderilemedi, lütfen tekrar deneyin.' });
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════════════
 // GOOGLE CLIENT ID (frontend için)
 // ══════════════════════════════════════════════════════════════════════════
 router.get('/config', (req, res) => {
@@ -359,12 +427,12 @@ router.get('/bookmarks', async (req, res) => {
     const [rows] = await db.query(`
       SELECT j.id, j.title, j.budget, j.work_date, j.city, j.district, j.work_type,
              u.full_name AS employer_name, u.avatar_url AS employer_avatar,
-             b.saved_at
+             b.created_at AS saved_at
       FROM bookmarks b
       JOIN jobs j ON j.id = b.job_id
       JOIN users u ON u.id = j.employer_id
       WHERE b.user_id = ?
-      ORDER BY b.saved_at DESC`, [uid]);
+      ORDER BY b.created_at DESC`, [uid]);
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
